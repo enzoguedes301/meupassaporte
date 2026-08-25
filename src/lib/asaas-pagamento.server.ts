@@ -64,6 +64,10 @@ async function criarOuBuscarClienteAsaas(
   email: string,
   cpf: string
 ): Promise<{ id: string }> {
+  if (!ASAAS_API_KEY) {
+    throw new Error("ASAAS_API_KEY vazia - não configurada no ambiente");
+  }
+
   try {
     // Buscar cliente existente por CPF
     const respBusca = await fetch(
@@ -76,7 +80,8 @@ async function criarOuBuscarClienteAsaas(
     );
 
     if (respBusca.ok) {
-      const dados = await respBusca.json();
+      const texto = await respBusca.text();
+      const dados = JSON.parse(texto);
       if (dados.data && dados.data.length > 0) {
         return { id: dados.data[0].id };
       }
@@ -97,10 +102,12 @@ async function criarOuBuscarClienteAsaas(
     });
 
     if (!respCriar.ok) {
-      throw new Error("Erro ao criar cliente no Asaas");
+      const erro = await respCriar.text();
+      throw new Error(`Erro ao criar cliente: ${erro}`);
     }
 
-    const novoCliente = await respCriar.json();
+    const texto = await respCriar.text();
+    const novoCliente = JSON.parse(texto);
     return { id: novoCliente.id };
   } catch (erro) {
     throw new Error(`Erro ao gerenciar cliente: ${erro instanceof Error ? erro.message : "Erro desconhecido"}`);
