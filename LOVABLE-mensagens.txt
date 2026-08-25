@@ -1,0 +1,1829 @@
+================================================================================
+GUIA DO PASSAPORTE - MENSAGENS PARA COLAR NO LOVABLE
+Gerado em 02/08/2026
+================================================================================
+
+COMO USAR
+
+  1. Sao 7 mensagens. Envie UMA POR VEZ, na ordem em que aparecem aqui.
+  2. Para cada uma, copie tudo o que esta entre as linhas
+     "----- INICIO DA MENSAGEM N -----" e "----- FIM DA MENSAGEM N -----"
+     (sem copiar essas duas linhas) e cole no chat do Lovable.
+  3. Espere o Lovable terminar antes de mandar a proxima.
+
+ATENCAO
+
+  - Entre as mensagens 1 e 6 o preview do Lovable pode acusar erro de import.
+    Isso e esperado: os arquivos ainda estao chegando pela metade. So avalie
+    o resultado depois da mensagem 7.
+  - As mensagens 3, 5, 6 e 7 sao arquivos QUE JA EXISTEM. Se voce tiver plano
+    pago, e melhor faze-las pela aba "Code" do Lovable: abre o arquivo,
+    Ctrl+A, cola SO o bloco de codigo (sem o texto de instrucao), Ctrl+S.
+    Nao gasta credito e o agente nao reescreve nada por conta propria.
+  - As mensagens 1, 2 e 4 criam arquivos novos e precisam ir pelo chat.
+  - Este arquivo .txt e so um apoio local. Ele NAO precisa ir para o Lovable.
+
+RESUMO DAS 7 MENSAGENS
+
+  1. CRIAR      src/lib/solicitacao.ts
+  2. CRIAR      src/components/gov/TipoSolicitacaoSelect.tsx
+  3. SUBSTITUIR src/components/gov/SolicitacaoDialog.tsx
+  4. CRIAR      src/components/gov/HeroSolicitacao.tsx
+  5. SUBSTITUIR src/styles.css
+  6. SUBSTITUIR src/routes/index.tsx
+  7. SUBSTITUIR src/components/gov/Header.tsx
+
+
+================================================================================
+MENSAGEM 1 de 7  -  CRIAR src/lib/solicitacao.ts
+================================================================================
+----- INICIO DA MENSAGEM 1 -----
+Crie o arquivo `src/lib/solicitacao.ts` com exatamente o conteúdo abaixo. Não refatore, não renomeie nada, não adicione comentários e não altere nenhum outro arquivo.
+
+```ts
+import { CircleX, FilePlus2, PenLine, RefreshCw, Smile, Zap } from "lucide-react";
+
+/** Tipos de solicitação oferecidos na caixa de seleção do hero e no formulário. */
+export const TIPOS_SOLICITACAO = [
+  {
+    value: "primeira-via",
+    label: "Primeira Via",
+    descricao: "Nunca tive passaporte brasileiro",
+    icon: FilePlus2,
+  },
+  {
+    value: "renovacao",
+    label: "Renovação",
+    descricao: "Passaporte vencido ou prestes a vencer",
+    icon: RefreshCw,
+  },
+  {
+    value: "correcao-nome",
+    label: "Mudança de nome",
+    descricao: "Correção ou alteração de nome no passaporte",
+    icon: PenLine,
+  },
+  {
+    value: "extravio",
+    label: "Perdido / extraviado",
+    descricao: "Passaporte perdido, roubado ou extraviado",
+    icon: CircleX,
+  },
+  {
+    value: "urgencia",
+    label: "Emergencial",
+    descricao: "Preciso com urgência para viagem",
+    icon: Zap,
+  },
+  {
+    value: "menor",
+    label: "Menor de Idade",
+    descricao: "Passaporte para menor de 18 anos",
+    icon: Smile,
+  },
+] as const;
+
+export type TipoSolicitacaoLabel = (typeof TIPOS_SOLICITACAO)[number]["label"];
+
+/** Mesma lista, só com os rótulos, no formato de tupla que o z.enum espera. */
+export const TIPOS_SOLICITACAO_LABELS = TIPOS_SOLICITACAO.map(
+  (tipo) => tipo.label,
+) as unknown as readonly [TipoSolicitacaoLabel, ...TipoSolicitacaoLabel[]];
+
+export function labelDoTipo(value: string) {
+  return TIPOS_SOLICITACAO.find((tipo) => tipo.value === value)?.label ?? "";
+}
+```
+----- FIM DA MENSAGEM 1 -----
+
+
+================================================================================
+MENSAGEM 2 de 7  -  CRIAR src/components/gov/TipoSolicitacaoSelect.tsx
+================================================================================
+----- INICIO DA MENSAGEM 2 -----
+Crie o arquivo `src/components/gov/TipoSolicitacaoSelect.tsx` com exatamente o conteúdo abaixo. Não refatore, não renomeie nada, não adicione comentários e não altere nenhum outro arquivo.
+
+```tsx
+import { useEffect, useId, useRef, useState } from "react";
+import { Check, ChevronDown, Stamp } from "lucide-react";
+
+import { TIPOS_SOLICITACAO } from "@/lib/solicitacao";
+import { cn } from "@/lib/utils";
+
+type Props = {
+  value: string;
+  onChange: (value: string) => void;
+  invalido?: boolean;
+  className?: string;
+};
+
+export function TipoSolicitacaoSelect({ value, onChange, invalido = false, className }: Props) {
+  const [aberto, setAberto] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const toggleRef = useRef<HTMLButtonElement | null>(null);
+  const itensRef = useRef<(HTMLLIElement | null)[]>([]);
+  const menuId = useId();
+
+  const selecionado = TIPOS_SOLICITACAO.find((tipo) => tipo.value === value);
+
+  useEffect(() => {
+    if (!aberto) return;
+
+    function aoClicarFora(event: PointerEvent) {
+      if (!containerRef.current?.contains(event.target as Node)) setAberto(false);
+    }
+
+    function aoTeclar(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setAberto(false);
+        toggleRef.current?.focus();
+      }
+    }
+
+    document.addEventListener("pointerdown", aoClicarFora);
+    document.addEventListener("keydown", aoTeclar);
+    return () => {
+      document.removeEventListener("pointerdown", aoClicarFora);
+      document.removeEventListener("keydown", aoTeclar);
+    };
+  }, [aberto]);
+
+  useEffect(() => {
+    if (!aberto) return;
+    const indice = TIPOS_SOLICITACAO.findIndex((tipo) => tipo.value === value);
+    itensRef.current[indice < 0 ? 0 : indice]?.focus();
+  }, [aberto, value]);
+
+  function selecionar(novo: string) {
+    onChange(novo);
+    setAberto(false);
+    toggleRef.current?.focus();
+  }
+
+  function moverFoco(indice: number, passo: number) {
+    const total = TIPOS_SOLICITACAO.length;
+    itensRef.current[(indice + passo + total) % total]?.focus();
+  }
+
+  return (
+    <div ref={containerRef} className={cn("relative", className)}>
+      <button
+        ref={toggleRef}
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={aberto}
+        aria-controls={aberto ? menuId : undefined}
+        aria-invalid={invalido || undefined}
+        onClick={() => setAberto((atual) => !atual)}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+            event.preventDefault();
+            setAberto(true);
+          }
+        }}
+        className={cn(
+          "focus-gov relative flex h-14 w-full items-center gap-2.5 rounded-md border bg-background py-0 pl-4 pr-11 text-left text-sm transition-colors",
+          invalido
+            ? "border-destructive"
+            : aberto
+              ? "border-primary"
+              : "border-border hover:border-primary/60",
+          selecionado ? "font-semibold text-primary-darker" : "text-muted-foreground",
+        )}
+      >
+        <Stamp className="size-5 shrink-0 text-primary" aria-hidden />
+        <span className="flex-1 truncate">
+          {selecionado?.label ?? "Selecione o tipo de solicitação"}
+        </span>
+        <ChevronDown
+          className={cn(
+            "absolute right-4 size-4 text-muted-foreground transition-transform",
+            aberto && "rotate-180",
+          )}
+          aria-hidden
+        />
+      </button>
+
+      {aberto && (
+        <ul
+          id={menuId}
+          role="listbox"
+          aria-label="Tipo de solicitação"
+          className="animate-in fade-in-0 slide-in-from-top-1 absolute inset-x-0 top-[calc(100%+0.5rem)] z-50 rounded-md border border-border bg-popover p-1.5 shadow-gov-lg duration-150"
+        >
+          {TIPOS_SOLICITACAO.map((tipo, indice) => {
+            const ativo = tipo.value === value;
+            const Icone = tipo.icon;
+
+            return (
+              <li
+                key={tipo.value}
+                ref={(el) => {
+                  itensRef.current[indice] = el;
+                }}
+                role="option"
+                aria-selected={ativo}
+                tabIndex={-1}
+                onClick={() => selecionar(tipo.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    selecionar(tipo.value);
+                  } else if (event.key === "ArrowDown") {
+                    event.preventDefault();
+                    moverFoco(indice, 1);
+                  } else if (event.key === "ArrowUp") {
+                    event.preventDefault();
+                    moverFoco(indice, -1);
+                  } else if (event.key === "Home") {
+                    event.preventDefault();
+                    itensRef.current[0]?.focus();
+                  } else if (event.key === "End") {
+                    event.preventDefault();
+                    itensRef.current[TIPOS_SOLICITACAO.length - 1]?.focus();
+                  } else if (event.key === "Tab") {
+                    setAberto(false);
+                  }
+                }}
+                className={cn(
+                  "flex cursor-pointer items-start gap-3 rounded-md px-3 py-2.5 text-sm outline-none transition-colors",
+                  ativo
+                    ? "bg-primary text-primary-foreground"
+                    : "text-primary-darker hover:bg-primary-soft/60 focus:bg-primary-soft/60",
+                )}
+              >
+                <Icone
+                  className={cn(
+                    "mt-0.5 size-5 shrink-0",
+                    ativo ? "text-primary-foreground" : "text-primary",
+                  )}
+                  aria-hidden
+                />
+                <span className="flex-1">
+                  <span className="block font-semibold">{tipo.label}</span>
+                  <span
+                    className={cn(
+                      "block text-xs leading-snug",
+                      ativo ? "text-primary-foreground/80" : "text-muted-foreground",
+                    )}
+                  >
+                    {tipo.descricao}
+                  </span>
+                </span>
+                {ativo && <Check className="mt-0.5 size-4 shrink-0" aria-hidden />}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+```
+----- FIM DA MENSAGEM 2 -----
+
+
+================================================================================
+MENSAGEM 3 de 7  -  SUBSTITUIR src/components/gov/SolicitacaoDialog.tsx
+================================================================================
+----- INICIO DA MENSAGEM 3 -----
+Substitua integralmente o conteúdo do arquivo `src/components/gov/SolicitacaoDialog.tsx` pelo código abaixo. Não refatore, não renomeie nada, não adicione comentários e não altere nenhum outro arquivo.
+
+```tsx
+import { useEffect, useState, type ReactNode } from "react";
+import { ArrowRight, Lock } from "lucide-react";
+import { z } from "zod";
+import { useNavigate } from "@tanstack/react-router";
+import { PAISES, UFS } from "@/lib/paises";
+import { TIPOS_SOLICITACAO_LABELS } from "@/lib/solicitacao";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+
+function maskCPF(value: string) {
+  const d = value.replace(/\D/g, "").slice(0, 11);
+  return d
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/(\d{3})\.(\d{3})\.(\d{3})(\d)/, "$1.$2.$3-$4");
+}
+
+function maskDate(value: string) {
+  const d = value.replace(/\D/g, "").slice(0, 8);
+  return d.replace(/(\d{2})(\d)/, "$1/$2").replace(/(\d{2})\/(\d{2})(\d)/, "$1/$2/$3");
+}
+
+function maskPhone(value: string) {
+  const d = value.replace(/\D/g, "").slice(0, 11);
+  if (d.length <= 10) {
+    return d.replace(/(\d{2})(\d)/, "($1) $2").replace(/(\d{4})(\d)/, "$1-$2");
+  }
+  return d.replace(/(\d{2})(\d)/, "($1) $2").replace(/(\d{5})(\d)/, "$1-$2");
+}
+
+function isValidCPF(raw: string) {
+  const cpf = raw.replace(/\D/g, "");
+  if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+  const calc = (len: number) => {
+    let sum = 0;
+    for (let i = 0; i < len; i++) sum += Number(cpf[i]) * (len + 1 - i);
+    const rest = (sum * 10) % 11;
+    return rest === 10 ? 0 : rest;
+  };
+  return calc(9) === Number(cpf[9]) && calc(10) === Number(cpf[10]);
+}
+
+function isValidBirthDate(value: string) {
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value);
+  if (!m) return false;
+  const [, dd, mm, yyyy] = m;
+  const date = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+  if (
+    date.getFullYear() !== Number(yyyy) ||
+    date.getMonth() !== Number(mm) - 1 ||
+    date.getDate() !== Number(dd)
+  )
+    return false;
+  const now = new Date();
+  return date <= now && Number(yyyy) >= 1900;
+}
+
+const schema = z
+  .object({
+    nome: z
+      .string()
+      .trim()
+      .min(5, { message: "Informe seu nome completo" })
+      .max(120, { message: "Nome muito longo" })
+      .refine((v) => v.split(/\s+/).length >= 2, { message: "Informe nome e sobrenome" }),
+    email: z
+      .string()
+      .trim()
+      .min(1, { message: "Informe seu e-mail" })
+      .email({ message: "E-mail inválido" })
+      .max(255, { message: "E-mail muito longo" }),
+    cpf: z.string().refine(isValidCPF, { message: "CPF inválido" }),
+    telefone: z
+      .string()
+      .refine((v) => v.replace(/\D/g, "").length >= 10 && v.replace(/\D/g, "").length <= 11, {
+        message: "Telefone inválido (DDD + número)",
+      }),
+    nascimento: z.string().refine(isValidBirthDate, { message: "Data inválida (dd/mm/aaaa)" }),
+    paisNascimento: z.string().trim().min(1, { message: "Selecione o país de nascimento" }),
+    cidadeNascimento: z
+      .string()
+      .trim()
+      .min(2, { message: "Informe a cidade de nascimento" })
+      .max(120, { message: "Cidade muito longa" }),
+    ufNascimento: z.string().trim().max(2).optional(),
+    cidade: z
+      .string()
+      .trim()
+      .min(2, { message: "Informe sua cidade atual" })
+      .max(120, { message: "Cidade muito longa" }),
+    cor: z.enum(["Branco", "Preto", "Pardo", "Amarelo", "Indígena"], {
+      message: "Selecione uma opção",
+    }),
+    situacaoCivil: z.enum(["Casado", "Solteiro", "União Estável"], {
+      message: "Selecione uma opção",
+    }),
+    nomeMae: z
+      .string()
+      .trim()
+      .min(5, { message: "Informe o nome completo da mãe" })
+      .max(120, { message: "Nome muito longo" })
+      .refine((v) => v.split(/\s+/).length >= 2, { message: "Informe nome e sobrenome" }),
+    nascimentoMae: z.string().refine(isValidBirthDate, { message: "Data inválida (dd/mm/aaaa)" }),
+    maeConstaDocumento: z.boolean(),
+    nomePai: z
+      .string()
+      .trim()
+      .min(5, { message: "Informe o nome completo do pai" })
+      .max(120, { message: "Nome muito longo" })
+      .refine((v) => v.split(/\s+/).length >= 2, { message: "Informe nome e sobrenome" }),
+    nascimentoPai: z.string().refine(isValidBirthDate, { message: "Data inválida (dd/mm/aaaa)" }),
+    possuiRg: z.enum(["Sim", "Não"], { message: "Selecione uma opção" }),
+    orgaoEmissorRg: z.string().trim().optional(),
+    ufRg: z.string().trim().optional(),
+    tipoSolicitacao: z.enum(TIPOS_SOLICITACAO_LABELS, {
+      message: "Selecione uma opção",
+    }),
+    cpfRegularizado: z.enum(["Sim", "Não", "Não sei"], {
+      message: "Selecione uma opção",
+    }),
+    contaGovBr: z.enum(["Sim", "Não", "Não sei"], {
+      message: "Selecione uma opção",
+    }),
+  })
+  .superRefine((data, ctx) => {
+    if (data.possuiRg === "Sim") {
+      if (!data.orgaoEmissorRg) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["orgaoEmissorRg"],
+          message: "Selecione o órgão emissor",
+        });
+      }
+      if (!data.ufRg) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["ufRg"],
+          message: "Selecione o estado de emissão",
+        });
+      }
+    }
+  });
+
+const CORES = ["Branco", "Preto", "Pardo", "Amarelo", "Indígena"] as const;
+const SITUACOES = ["Casado", "Solteiro", "União Estável"] as const;
+const ORGAOS_RG = ["SSP", "DETRAN", "PF/DPF", "IFP", "IIRGD", "Outro"] as const;
+const SIM_NAO = ["Sim", "Não"] as const;
+const SIM_NAO_NAOSEI = ["Sim", "Não", "Não sei"] as const;
+
+type Campos = z.infer<typeof schema>;
+type Erros = Partial<Record<keyof Campos, string>>;
+type FormState = Omit<
+  Campos,
+  "cor" | "situacaoCivil" | "possuiRg" | "tipoSolicitacao" | "cpfRegularizado" | "contaGovBr"
+> & {
+  cor: string;
+  situacaoCivil: string;
+  possuiRg: string;
+  tipoSolicitacao: string;
+  cpfRegularizado: string;
+  contaGovBr: string;
+};
+
+const inputClass =
+  "focus-gov mt-1.5 w-full rounded-md border border-border bg-background px-3.5 py-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground";
+
+type SolicitacaoDialogProps = {
+  /** Gatilho opcional. Sem ele, o diálogo é controlado por `open`/`onOpenChange`. */
+  children?: ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** Rótulo do tipo escolhido na caixa de seleção do hero. */
+  tipoInicial?: string;
+};
+
+export function SolicitacaoDialog({
+  children,
+  open: openProp,
+  onOpenChange,
+  tipoInicial,
+}: SolicitacaoDialogProps) {
+  const navigate = useNavigate();
+  const [openInterno, setOpenInterno] = useState(false);
+  const open = openProp ?? openInterno;
+
+  function setOpen(valor: boolean) {
+    setOpenInterno(valor);
+    onOpenChange?.(valor);
+  }
+
+  const [values, setValues] = useState<FormState>({
+    nome: "",
+    email: "",
+    cpf: "",
+    telefone: "",
+    nascimento: "",
+    paisNascimento: "Brasil",
+    cidadeNascimento: "",
+    ufNascimento: "",
+    cidade: "",
+    cor: "",
+    situacaoCivil: "",
+    nomeMae: "",
+    nascimentoMae: "",
+    maeConstaDocumento: false,
+    nomePai: "",
+    nascimentoPai: "",
+    possuiRg: "",
+    orgaoEmissorRg: "",
+    ufRg: "",
+    tipoSolicitacao: "",
+    cpfRegularizado: "",
+    contaGovBr: "",
+  });
+  const [errors, setErrors] = useState<Erros>({});
+
+  useEffect(() => {
+    if (!open || !tipoInicial) return;
+    setValues((prev) =>
+      prev.tipoSolicitacao === tipoInicial ? prev : { ...prev, tipoSolicitacao: tipoInicial },
+    );
+  }, [open, tipoInicial]);
+
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const result = schema.safeParse(values);
+    if (!result.success) {
+      const next: Erros = {};
+      for (const issue of result.error.issues) {
+        const key = issue.path[0] as keyof Campos;
+        if (!next[key]) next[key] = issue.message;
+      }
+      setErrors(next);
+      return;
+    }
+    setErrors({});
+    setOpen(false);
+    sessionStorage.setItem("solicitacao-guia", JSON.stringify(result.data));
+    navigate({ to: "/checkout" });
+  }
+
+  function update(field: keyof FormState, value: string | boolean) {
+    setValues((prev) => ({ ...prev, [field]: value }));
+    setErrors((prev) => ({ ...prev, [field]: undefined }));
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      {children ? <DialogTrigger asChild>{children}</DialogTrigger> : null}
+      <DialogContent className="max-h-[85vh] w-[calc(100%-2rem)] max-w-md overflow-y-auto rounded-lg p-0">
+        <div className="gov-stripe h-1.5" aria-hidden />
+        <div className="p-6">
+          <DialogHeader className="pr-6 text-left">
+            <DialogTitle className="font-display text-xl font-extrabold text-primary-darker">
+              Dados do solicitante
+            </DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground">
+              Preencha os dados abaixo para continuar para o pagamento.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form className="mt-6 space-y-4" onSubmit={handleSubmit} noValidate>
+            <div>
+              <label htmlFor="nome" className="text-sm font-semibold text-primary-darker">
+                Nome completo
+              </label>
+              <input
+                id="nome"
+                name="nome"
+                autoComplete="name"
+                maxLength={120}
+                className={inputClass}
+                placeholder="Como consta no documento"
+                value={values.nome}
+                onChange={(e) => update("nome", e.target.value)}
+                aria-invalid={!!errors.nome}
+              />
+              {errors.nome && <p className="mt-1 text-xs text-destructive">{errors.nome}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="email" className="text-sm font-semibold text-primary-darker">
+                E-mail
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                maxLength={255}
+                className={inputClass}
+                placeholder="Seu email"
+                value={values.email}
+                onChange={(e) => update("email", e.target.value)}
+                aria-invalid={!!errors.email}
+              />
+              {errors.email && <p className="mt-1 text-xs text-destructive">{errors.email}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="cpf" className="text-sm font-semibold text-primary-darker">
+                CPF
+              </label>
+              <input
+                id="cpf"
+                name="cpf"
+                inputMode="numeric"
+                className={inputClass}
+                placeholder="000.000.000-00"
+                value={values.cpf}
+                onChange={(e) => update("cpf", maskCPF(e.target.value))}
+                aria-invalid={!!errors.cpf}
+              />
+              {errors.cpf && <p className="mt-1 text-xs text-destructive">{errors.cpf}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="telefone" className="text-sm font-semibold text-primary-darker">
+                Telefone (WhatsApp)
+              </label>
+              <input
+                id="telefone"
+                name="telefone"
+                inputMode="tel"
+                autoComplete="tel"
+                className={inputClass}
+                placeholder="(11) 99999-9999"
+                value={values.telefone}
+                onChange={(e) => update("telefone", maskPhone(e.target.value))}
+                aria-invalid={!!errors.telefone}
+              />
+              {errors.telefone && (
+                <p className="mt-1 text-xs text-destructive">{errors.telefone}</p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="nascimento" className="text-sm font-semibold text-primary-darker">
+                Data de nascimento
+              </label>
+              <input
+                id="nascimento"
+                name="nascimento"
+                inputMode="numeric"
+                className={inputClass}
+                placeholder="dd/mm/aaaa"
+                value={values.nascimento}
+                onChange={(e) => update("nascimento", maskDate(e.target.value))}
+                aria-invalid={!!errors.nascimento}
+              />
+              {errors.nascimento && (
+                <p className="mt-1 text-xs text-destructive">{errors.nascimento}</p>
+              )}
+            </div>
+
+            <fieldset className="rounded-md border border-border p-4">
+              <legend className="px-1 text-sm font-bold text-primary-darker">Naturalidade</legend>
+
+              <div>
+                <label
+                  htmlFor="paisNascimento"
+                  className="text-sm font-semibold text-primary-darker"
+                >
+                  País de nascimento
+                </label>
+                <select
+                  id="paisNascimento"
+                  name="paisNascimento"
+                  className={inputClass}
+                  value={values.paisNascimento}
+                  onChange={(e) => update("paisNascimento", e.target.value)}
+                  aria-invalid={!!errors.paisNascimento}
+                >
+                  <option value="">Selecione</option>
+                  {PAISES.map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </select>
+                {errors.paisNascimento && (
+                  <p className="mt-1 text-xs text-destructive">{errors.paisNascimento}</p>
+                )}
+              </div>
+
+              <div className="mt-4">
+                <label
+                  htmlFor="cidadeNascimento"
+                  className="text-sm font-semibold text-primary-darker"
+                >
+                  Cidade de nascimento
+                </label>
+                <input
+                  id="cidadeNascimento"
+                  name="cidadeNascimento"
+                  maxLength={120}
+                  className={inputClass}
+                  placeholder="Cidade onde nasceu"
+                  value={values.cidadeNascimento}
+                  onChange={(e) => update("cidadeNascimento", e.target.value)}
+                  aria-invalid={!!errors.cidadeNascimento}
+                />
+                {errors.cidadeNascimento && (
+                  <p className="mt-1 text-xs text-destructive">{errors.cidadeNascimento}</p>
+                )}
+              </div>
+
+              {values.paisNascimento === "Brasil" && (
+                <div className="mt-4">
+                  <label
+                    htmlFor="ufNascimento"
+                    className="text-sm font-semibold text-primary-darker"
+                  >
+                    Estado (UF)
+                  </label>
+                  <select
+                    id="ufNascimento"
+                    name="ufNascimento"
+                    className={inputClass}
+                    value={values.ufNascimento ?? ""}
+                    onChange={(e) => update("ufNascimento", e.target.value)}
+                  >
+                    <option value="">Selecione</option>
+                    {UFS.map((uf) => (
+                      <option key={uf} value={uf}>
+                        {uf}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div className="mt-4">
+                <label htmlFor="cidade" className="text-sm font-semibold text-primary-darker">
+                  Cidade
+                </label>
+                <input
+                  id="cidade"
+                  name="cidade"
+                  maxLength={120}
+                  className={inputClass}
+                  placeholder="Cidade onde reside atualmente"
+                  value={values.cidade}
+                  onChange={(e) => update("cidade", e.target.value)}
+                  aria-invalid={!!errors.cidade}
+                />
+                {errors.cidade && <p className="mt-1 text-xs text-destructive">{errors.cidade}</p>}
+              </div>
+            </fieldset>
+
+            <div>
+              <label htmlFor="cor" className="text-sm font-semibold text-primary-darker">
+                Cor
+              </label>
+              <select
+                id="cor"
+                name="cor"
+                className={inputClass}
+                value={values.cor}
+                onChange={(e) => update("cor", e.target.value)}
+                aria-invalid={!!errors.cor}
+              >
+                <option value="">Selecione</option>
+                {CORES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+              {errors.cor && <p className="mt-1 text-xs text-destructive">{errors.cor}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="situacaoCivil" className="text-sm font-semibold text-primary-darker">
+                Situação civil
+              </label>
+              <select
+                id="situacaoCivil"
+                name="situacaoCivil"
+                className={inputClass}
+                value={values.situacaoCivil}
+                onChange={(e) => update("situacaoCivil", e.target.value)}
+                aria-invalid={!!errors.situacaoCivil}
+              >
+                <option value="">Selecione</option>
+                {SITUACOES.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+              {errors.situacaoCivil && (
+                <p className="mt-1 text-xs text-destructive">{errors.situacaoCivil}</p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="nomeMae" className="text-sm font-semibold text-primary-darker">
+                Nome completo da mãe
+              </label>
+              <input
+                id="nomeMae"
+                name="nomeMae"
+                maxLength={120}
+                className={inputClass}
+                placeholder="Como consta no documento"
+                value={values.nomeMae}
+                onChange={(e) => update("nomeMae", e.target.value)}
+                aria-invalid={!!errors.nomeMae}
+              />
+              {errors.nomeMae && <p className="mt-1 text-xs text-destructive">{errors.nomeMae}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="nascimentoMae" className="text-sm font-semibold text-primary-darker">
+                Data de nascimento da mãe
+              </label>
+              <input
+                id="nascimentoMae"
+                name="nascimentoMae"
+                inputMode="numeric"
+                className={inputClass}
+                placeholder="dd/mm/aaaa"
+                value={values.nascimentoMae}
+                onChange={(e) => update("nascimentoMae", maskDate(e.target.value))}
+                aria-invalid={!!errors.nascimentoMae}
+              />
+              {errors.nascimentoMae && (
+                <p className="mt-1 text-xs text-destructive">{errors.nascimentoMae}</p>
+              )}
+            </div>
+
+            <label
+              htmlFor="maeConstaDocumento"
+              className="flex items-start gap-2.5 text-sm text-foreground"
+            >
+              <input
+                id="maeConstaDocumento"
+                name="maeConstaDocumento"
+                type="checkbox"
+                className="focus-gov mt-0.5 size-4 rounded border-border accent-primary"
+                checked={values.maeConstaDocumento}
+                onChange={(e) => update("maeConstaDocumento", e.target.checked)}
+              />
+              O nome da mãe consta no documento de identidade
+            </label>
+
+            <div>
+              <label htmlFor="nomePai" className="text-sm font-semibold text-primary-darker">
+                Nome completo do pai
+              </label>
+              <input
+                id="nomePai"
+                name="nomePai"
+                maxLength={120}
+                className={inputClass}
+                placeholder="Como consta no documento"
+                value={values.nomePai}
+                onChange={(e) => update("nomePai", e.target.value)}
+                aria-invalid={!!errors.nomePai}
+              />
+              {errors.nomePai && <p className="mt-1 text-xs text-destructive">{errors.nomePai}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="nascimentoPai" className="text-sm font-semibold text-primary-darker">
+                Data de nascimento do pai
+              </label>
+              <input
+                id="nascimentoPai"
+                name="nascimentoPai"
+                inputMode="numeric"
+                className={inputClass}
+                placeholder="dd/mm/aaaa"
+                value={values.nascimentoPai}
+                onChange={(e) => update("nascimentoPai", maskDate(e.target.value))}
+                aria-invalid={!!errors.nascimentoPai}
+              />
+              {errors.nascimentoPai && (
+                <p className="mt-1 text-xs text-destructive">{errors.nascimentoPai}</p>
+              )}
+            </div>
+
+            <fieldset className="rounded-md border border-border p-4">
+              <legend className="px-1 text-sm font-bold text-primary-darker">
+                Situação do processo
+              </legend>
+
+              <div>
+                <label htmlFor="possuiRg" className="text-sm font-semibold text-primary-darker">
+                  Você já possui RG (Registro Geral)?
+                </label>
+                <select
+                  id="possuiRg"
+                  name="possuiRg"
+                  className={inputClass}
+                  value={values.possuiRg}
+                  onChange={(e) => update("possuiRg", e.target.value)}
+                  aria-invalid={!!errors.possuiRg}
+                >
+                  <option value="">Selecione</option>
+                  {SIM_NAO.map((o) => (
+                    <option key={o} value={o}>
+                      {o}
+                    </option>
+                  ))}
+                </select>
+                {errors.possuiRg && (
+                  <p className="mt-1 text-xs text-destructive">{errors.possuiRg}</p>
+                )}
+              </div>
+
+              {values.possuiRg === "Sim" && (
+                <>
+                  <div className="mt-4">
+                    <label
+                      htmlFor="orgaoEmissorRg"
+                      className="text-sm font-semibold text-primary-darker"
+                    >
+                      Órgão emissor do RG
+                    </label>
+                    <select
+                      id="orgaoEmissorRg"
+                      name="orgaoEmissorRg"
+                      className={inputClass}
+                      value={values.orgaoEmissorRg ?? ""}
+                      onChange={(e) => update("orgaoEmissorRg", e.target.value)}
+                      aria-invalid={!!errors.orgaoEmissorRg}
+                    >
+                      <option value="">Selecione</option>
+                      {ORGAOS_RG.map((o) => (
+                        <option key={o} value={o}>
+                          {o}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.orgaoEmissorRg && (
+                      <p className="mt-1 text-xs text-destructive">{errors.orgaoEmissorRg}</p>
+                    )}
+                  </div>
+
+                  <div className="mt-4">
+                    <label htmlFor="ufRg" className="text-sm font-semibold text-primary-darker">
+                      Estado em que o RG foi emitido
+                    </label>
+                    <select
+                      id="ufRg"
+                      name="ufRg"
+                      className={inputClass}
+                      value={values.ufRg ?? ""}
+                      onChange={(e) => update("ufRg", e.target.value)}
+                      aria-invalid={!!errors.ufRg}
+                    >
+                      <option value="">Selecione</option>
+                      {UFS.map((uf) => (
+                        <option key={uf} value={uf}>
+                          {uf}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.ufRg && <p className="mt-1 text-xs text-destructive">{errors.ufRg}</p>}
+                  </div>
+                </>
+              )}
+
+              <div className="mt-4">
+                <label
+                  htmlFor="tipoSolicitacao"
+                  className="text-sm font-semibold text-primary-darker"
+                >
+                  Tipo de solicitação
+                </label>
+                <select
+                  id="tipoSolicitacao"
+                  name="tipoSolicitacao"
+                  className={inputClass}
+                  value={values.tipoSolicitacao}
+                  onChange={(e) => update("tipoSolicitacao", e.target.value)}
+                  aria-invalid={!!errors.tipoSolicitacao}
+                >
+                  <option value="">Selecione</option>
+                  {TIPOS_SOLICITACAO_LABELS.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+                {errors.tipoSolicitacao && (
+                  <p className="mt-1 text-xs text-destructive">{errors.tipoSolicitacao}</p>
+                )}
+              </div>
+
+              <div className="mt-4">
+                <label
+                  htmlFor="cpfRegularizado"
+                  className="text-sm font-semibold text-primary-darker"
+                >
+                  Seu CPF está regularizado (sem pendências na Receita Federal)?
+                </label>
+                <select
+                  id="cpfRegularizado"
+                  name="cpfRegularizado"
+                  className={inputClass}
+                  value={values.cpfRegularizado}
+                  onChange={(e) => update("cpfRegularizado", e.target.value)}
+                  aria-invalid={!!errors.cpfRegularizado}
+                >
+                  <option value="">Selecione</option>
+                  {SIM_NAO_NAOSEI.map((o) => (
+                    <option key={o} value={o}>
+                      {o}
+                    </option>
+                  ))}
+                </select>
+                {errors.cpfRegularizado && (
+                  <p className="mt-1 text-xs text-destructive">{errors.cpfRegularizado}</p>
+                )}
+              </div>
+
+              <div className="mt-4">
+                <label htmlFor="contaGovBr" className="text-sm font-semibold text-primary-darker">
+                  Você já tem conta no gov.br nível Prata ou Ouro?
+                </label>
+                <select
+                  id="contaGovBr"
+                  name="contaGovBr"
+                  className={inputClass}
+                  value={values.contaGovBr}
+                  onChange={(e) => update("contaGovBr", e.target.value)}
+                  aria-invalid={!!errors.contaGovBr}
+                >
+                  <option value="">Selecione</option>
+                  {SIM_NAO_NAOSEI.map((o) => (
+                    <option key={o} value={o}>
+                      {o}
+                    </option>
+                  ))}
+                </select>
+                {errors.contaGovBr && (
+                  <p className="mt-1 text-xs text-destructive">{errors.contaGovBr}</p>
+                )}
+              </div>
+            </fieldset>
+
+            <button
+              type="submit"
+              className="focus-gov inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-6 py-3.5 text-base font-semibold text-primary-foreground transition-colors hover:bg-primary-dark"
+            >
+              Continuar para o pagamento
+              <ArrowRight className="size-4" aria-hidden />
+            </button>
+
+            <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+              <Lock className="size-3.5" aria-hidden />
+              Seus dados são usados apenas para emitir o acesso ao documento em PDF
+            </p>
+          </form>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+```
+----- FIM DA MENSAGEM 3 -----
+
+
+================================================================================
+MENSAGEM 4 de 7  -  CRIAR src/components/gov/HeroSolicitacao.tsx
+================================================================================
+----- INICIO DA MENSAGEM 4 -----
+Crie o arquivo `src/components/gov/HeroSolicitacao.tsx` com exatamente o conteúdo abaixo. Não refatore, não renomeie nada, não adicione comentários e não altere nenhum outro arquivo.
+
+```tsx
+import { useState } from "react";
+import { ArrowRight } from "lucide-react";
+
+import { SolicitacaoDialog } from "@/components/gov/SolicitacaoDialog";
+import { TipoSolicitacaoSelect } from "@/components/gov/TipoSolicitacaoSelect";
+import { labelDoTipo } from "@/lib/solicitacao";
+import { cn } from "@/lib/utils";
+
+export function HeroSolicitacao() {
+  const [tipo, setTipo] = useState("");
+  const [erro, setErro] = useState(false);
+  const [tentativas, setTentativas] = useState(0);
+  const [dialogAberto, setDialogAberto] = useState(false);
+
+  function comecar() {
+    if (!tipo) {
+      setErro(true);
+      setTentativas((n) => n + 1);
+      return;
+    }
+    setErro(false);
+    setDialogAberto(true);
+  }
+
+  return (
+    <div className="mt-8">
+      <div className="flex flex-wrap items-center gap-3">
+        <TipoSolicitacaoSelect
+          key={tentativas}
+          value={tipo}
+          onChange={(novo) => {
+            setTipo(novo);
+            setErro(false);
+          }}
+          invalido={erro}
+          className={cn(
+            "w-full min-w-0 flex-1 sm:min-w-[280px] sm:max-w-[380px]",
+            erro && "gov-shake",
+          )}
+        />
+
+        <button
+          type="button"
+          onClick={comecar}
+          className="focus-gov inline-flex h-14 w-full items-center justify-center gap-2 rounded-full bg-primary px-7 text-base font-semibold text-primary-foreground shadow-gov transition-colors hover:bg-primary-dark sm:w-auto"
+        >
+          Começar agora
+          <ArrowRight className="size-4" aria-hidden />
+        </button>
+      </div>
+
+      {erro && (
+        <p role="alert" className="mt-2.5 text-sm font-medium text-destructive">
+          Selecione o tipo de solicitação para continuar.
+        </p>
+      )}
+
+      <a
+        href="#etapas"
+        className="focus-gov mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
+      >
+        Ver as etapas do processo
+        <ArrowRight className="size-3.5" aria-hidden />
+      </a>
+
+      <SolicitacaoDialog
+        open={dialogAberto}
+        onOpenChange={setDialogAberto}
+        tipoInicial={labelDoTipo(tipo)}
+      />
+    </div>
+  );
+}
+```
+----- FIM DA MENSAGEM 4 -----
+
+
+================================================================================
+MENSAGEM 5 de 7  -  SUBSTITUIR src/styles.css
+================================================================================
+----- INICIO DA MENSAGEM 5 -----
+Substitua integralmente o conteúdo do arquivo `src/styles.css` pelo código abaixo. Não refatore, não renomeie nada, não adicione comentários e não altere nenhum outro arquivo.
+
+```css
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Design system definition.
+ *
+ * The @theme inline block maps CSS custom properties to Tailwind utility
+ * classes (e.g. --color-primary -> bg-primary, text-primary).
+ *
+ * The :root and .dark blocks define the actual color values using oklch.
+ * All colors MUST use oklch format.
+ *
+ * To add a new semantic color:
+ * 1. Add the variable to :root (light value) and .dark (dark value)
+ * 2. Register it in @theme inline as --color-<name>: var(--<name>)
+ */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-dark: var(--primary-dark);
+  --color-primary-darker: var(--primary-darker);
+  --color-primary-soft: var(--primary-soft);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-soft: var(--accent-soft);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+
+  --font-sans: "Raleway", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Rawline", "Raleway", ui-sans-serif, system-ui, sans-serif;
+
+  --shadow-gov: 0 2px 8px 0 oklch(0.238 0.074 259.7 / 12%);
+  --shadow-gov-lg: 0 8px 28px -6px oklch(0.238 0.074 259.7 / 22%);
+}
+
+:root {
+  --radius: 0.25rem;
+  --background: oklch(0.979 0 89.9);
+  --foreground: oklch(0.238 0.074 259.7);
+  --surface: oklch(1 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.238 0.074 259.7);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.238 0.074 259.7);
+
+  --primary: oklch(0.46 0.169 260.1);
+  --primary-foreground: oklch(1 0 0);
+  --primary-dark: oklch(0.331 0.114 259.9);
+  --primary-darker: oklch(0.238 0.074 259.7);
+  --primary-soft: oklch(0.917 0.04 258.8);
+
+  --secondary: oklch(0.946 0 89.9);
+  --secondary-foreground: oklch(0.331 0.114 259.9);
+  --muted: oklch(0.946 0 89.9);
+  --muted-foreground: oklch(0.5 0.02 260);
+
+  --accent: oklch(0.867 0.176 90.7);
+  --accent-foreground: oklch(0.238 0.074 259.7);
+  --accent-soft: oklch(0.966 0.066 98.2);
+
+  --success: oklch(0.547 0.169 143.8);
+  --success-foreground: oklch(1 0 0);
+  --warning: oklch(0.767 0.163 71.9);
+
+  --destructive: oklch(0.59 0.227 30.8);
+  --destructive-foreground: oklch(1 0 0);
+
+  --border: oklch(0.895 0.005 260);
+  --input: oklch(0.895 0.005 260);
+  --ring: oklch(0.5 0.187 260.2);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+  }
+}
+
+/* Faixa tricolor institucional */
+@utility gov-stripe {
+  background: linear-gradient(
+    to right,
+    var(--color-success) 0 33.33%,
+    var(--color-accent) 33.33% 66.66%,
+    var(--color-primary) 66.66% 100%
+  );
+}
+
+@utility gov-link {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  &:hover {
+    color: var(--color-primary-dark);
+  }
+}
+
+/* Sinaliza campo obrigatório não preenchido (caixa de seleção do hero) */
+@utility gov-shake {
+  animation: gov-shake 0.4s ease;
+}
+
+@keyframes gov-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+@utility focus-gov {
+  &:focus-visible {
+    outline: 3px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+}
+```
+----- FIM DA MENSAGEM 5 -----
+
+
+================================================================================
+MENSAGEM 6 de 7  -  SUBSTITUIR src/routes/index.tsx
+================================================================================
+----- INICIO DA MENSAGEM 6 -----
+Substitua integralmente o conteúdo do arquivo `src/routes/index.tsx` pelo código abaixo. Não refatore, não renomeie nada, não adicione comentários e não altere nenhum outro arquivo.
+
+```tsx
+import { createFileRoute } from "@tanstack/react-router";
+import {
+  ArrowRight,
+  BadgeCheck,
+  CalendarClock,
+  CheckCircle2,
+  CreditCard,
+  FileText,
+  Fingerprint,
+  Info,
+  Lock,
+  MapPin,
+  ShieldCheck,
+  Users,
+} from "lucide-react";
+
+import { GovHeader } from "@/components/gov/Header";
+import { GovFooter } from "@/components/gov/Footer";
+import { HeroSolicitacao } from "@/components/gov/HeroSolicitacao";
+import { SolicitacaoDialog } from "@/components/gov/SolicitacaoDialog";
+import heroImage from "@/assets/hero-passaporte.png";
+
+export const Route = createFileRoute("/")({
+  component: Index,
+  head: () => ({
+    meta: [
+      { title: "Guia do Passaporte — Passo a passo do primeiro passaporte" },
+      {
+        name: "description",
+        content:
+          "Guia digital com o passo a passo completo para tirar o primeiro passaporte brasileiro: documentos, taxa, agendamento e atendimento sem erros.",
+      },
+      {
+        property: "og:title",
+        content: "Guia do Passaporte — Passo a passo do primeiro passaporte",
+      },
+      {
+        property: "og:description",
+        content:
+          "Documentos, taxa, agendamento e atendimento explicados em linguagem simples, do início ao documento em mãos.",
+      },
+      { property: "og:url", content: "https://meupassaporte.digital/" },
+      {
+        property: "og:image",
+        content: "https://meupassaporte.digital/og-guia-passaporte.jpg",
+      },
+      {
+        name: "twitter:image",
+        content: "https://meupassaporte.digital/og-guia-passaporte.jpg",
+      },
+    ],
+    links: [{ rel: "canonical", href: "https://meupassaporte.digital/" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Product",
+          name: "Guia do Passaporte",
+          description:
+            "Guia digital com o passo a passo completo para solicitar o primeiro passaporte brasileiro.",
+          image: "https://meupassaporte.digital/produto-guia-passaporte.jpg",
+          url: "https://meupassaporte.digital/",
+          brand: { "@type": "Brand", name: "Guia do Passaporte" },
+          offers: {
+            "@type": "Offer",
+            url: "https://meupassaporte.digital/",
+            price: "239.90",
+            priceCurrency: "BRL",
+            availability: "https://schema.org/InStock",
+            itemCondition: "https://schema.org/NewCondition",
+            shippingDetails: {
+              "@type": "OfferShippingDetails",
+              shippingRate: {
+                "@type": "MonetaryAmount",
+                value: "0",
+                currency: "BRL",
+              },
+              shippingDestination: {
+                "@type": "DefinedRegion",
+                addressCountry: "BR",
+              },
+              deliveryTime: {
+                "@type": "ShippingDeliveryTime",
+                handlingTime: {
+                  "@type": "QuantitativeValue",
+                  minValue: 0,
+                  maxValue: 0,
+                  unitCode: "DAY",
+                },
+                transitTime: {
+                  "@type": "QuantitativeValue",
+                  minValue: 0,
+                  maxValue: 1,
+                  unitCode: "DAY",
+                },
+              },
+            },
+            hasMerchantReturnPolicy: {
+              "@type": "MerchantReturnPolicy",
+              applicableCountry: "BR",
+              returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
+              merchantReturnDays: 7,
+              returnMethod: "https://schema.org/ReturnByMail",
+              returnFees: "https://schema.org/FreeReturn",
+            },
+          },
+        }),
+      },
+    ],
+  }),
+});
+
+const etapas = [
+  {
+    icon: FileText,
+    titulo: "1. Reúna os documentos",
+    texto:
+      "Lista completa e atualizada do que é exigido para maiores e menores de idade, incluindo os casos especiais que mais geram indeferimento.",
+  },
+  {
+    icon: CreditCard,
+    titulo: "2. Emita e pague a taxa (GRU)",
+    texto:
+      "Como gerar a guia oficial, onde pagar, prazo de compensação e o que fazer se o pagamento não constar no sistema.",
+  },
+  {
+    icon: CalendarClock,
+    titulo: "3. Faça o agendamento",
+    texto:
+      "Como preencher o formulário, escolher o posto de atendimento e liberar novas vagas quando a agenda aparece lotada.",
+  },
+  {
+    icon: Fingerprint,
+    titulo: "4. Compareça ao atendimento",
+    texto:
+      "O que levar, como é a coleta de foto, assinatura e digitais, e os erros que fazem o solicitante voltar outro dia.",
+  },
+  {
+    icon: MapPin,
+    titulo: "5. Acompanhe e retire",
+    texto:
+      "Como consultar o andamento, prazos médios de produção e as regras de retirada por terceiros com procuração.",
+  },
+  {
+    icon: BadgeCheck,
+    titulo: "6. Depois do passaporte",
+    texto:
+      "Validade, cuidados com o documento, vistos, exigências de países e o que fazer em caso de perda ou roubo.",
+  },
+];
+
+const conteudos = [
+  "Guia completo em PDF, com 6 módulos em linguagem simples",
+  "Checklist imprimível de documentos por perfil",
+  "Modelos de autorização para menores de idade",
+  "Passo a passo ilustrado do agendamento",
+  "Lista de erros que causam indeferimento",
+  "Orientação para perda, roubo e segunda via",
+  "Perguntas frequentes respondidas em detalhe",
+  "Atualizações gratuitas sempre que as regras mudarem",
+];
+
+const faq = [
+  {
+    q: "Este site é do governo?",
+    a: "Não. Este é um material educacional independente, produzido por particulares. Não temos vínculo com a Polícia Federal, com o gov.br ou com qualquer órgão público. O pedido do passaporte é sempre feito nos canais oficiais.",
+  },
+  {
+    q: "O valor pago aqui é a taxa do passaporte?",
+    a: "Não. O valor cobrado é apenas pelo acesso ao guia. A taxa oficial do passaporte é paga separadamente, por meio de guia emitida no sistema do órgão responsável.",
+  },
+  {
+    q: "Serve para quem nunca tirou passaporte?",
+    a: "Sim, o guia foi escrito exatamente para o primeiro passaporte, do zero, sem pressupor conhecimento prévio sobre o processo.",
+  },
+  {
+    q: "E se eu precisar tirar o passaporte de uma criança?",
+    a: "Há um módulo específico para menores de idade, com documentação, autorizações, casos de guarda e situações em que apenas um dos responsáveis pode comparecer.",
+  },
+  {
+    q: "Como recebo o guia depois de pagar?",
+    a: "Assim que o pagamento é confirmado, o guia em PDF é enviado para o e-mail informado na compra. O arquivo é seu para sempre. Sempre que o conteúdo for atualizado, enviamos a nova versão para o mesmo e-mail da compra, sem cobrança adicional.",
+  },
+  {
+    q: "Posso pedir reembolso?",
+    a: "Sim. Se o guia não atender às suas expectativas, você pode solicitar o reembolso integral dentro do prazo de garantia informado na compra.",
+  },
+];
+
+function Index() {
+  return (
+    <div className="min-h-screen bg-background">
+      <GovHeader />
+
+      <main>
+        {/* HERO */}
+        <section className="border-b border-border bg-surface">
+          <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 lg:grid-cols-[1.1fr_0.9fr] lg:py-20">
+            <div>
+              <h1 className="font-display text-3xl font-extrabold leading-[1.15] text-primary-darker sm:text-4xl lg:text-5xl">
+                Tire seu primeiro passaporte sem erro, sem fila extra e sem retrabalho
+              </h1>
+
+              <p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+                Um passo a passo direto, em linguagem simples, que acompanha você desde a separação
+                dos documentos até o documento na mão — com os detalhes que mais fazem gente perder
+                o atendimento.
+              </p>
+
+              <HeroSolicitacao />
+
+              <dl className="mt-10 grid max-w-lg grid-cols-3 gap-3 border-t border-border pt-6 sm:gap-4">
+                <div className="min-w-0">
+                  <dt className="text-xs font-medium uppercase text-muted-foreground">Módulos</dt>
+                  <dd className="font-display text-xl font-extrabold text-primary-dark sm:text-2xl">
+                    6
+                  </dd>
+                </div>
+                <div className="min-w-0">
+                  <dt className="text-xs font-medium uppercase text-muted-foreground">Formato</dt>
+                  <dd className="font-display text-xl font-extrabold text-primary-dark sm:text-2xl">
+                    PDF
+                  </dd>
+                </div>
+                <div className="min-w-0">
+                  <dt className="text-xs font-medium uppercase text-muted-foreground">Garantia</dt>
+                  <dd className="font-display text-xl font-extrabold text-primary-dark sm:text-2xl">
+                    7 dias
+                  </dd>
+                </div>
+              </dl>
+            </div>
+
+            <div className="relative">
+              <div
+                className="absolute inset-6 rounded-full bg-primary-soft/70 blur-2xl"
+                aria-hidden
+              />
+              <img
+                src={heroImage}
+                alt="Ilustração de um passaporte brasileiro ao lado de um checklist de documentos e um celular com o formulário de solicitação"
+                width={1024}
+                height={1024}
+                className="relative mx-auto w-full max-w-md"
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* ETAPAS */}
+        <section id="etapas" className="mx-auto max-w-6xl px-4 py-16 lg:py-20">
+          <header className="max-w-2xl">
+            <p className="text-sm font-bold uppercase tracking-wide text-primary">
+              Como funciona o processo
+            </p>
+            <h2 className="mt-2 font-display text-3xl font-extrabold text-primary-darker sm:text-4xl">
+              As 6 etapas do primeiro passaporte
+            </h2>
+            <p className="mt-3 text-muted-foreground">
+              Cada etapa do guia traz o que fazer, o que evitar e o que ter em mãos antes de
+              avançar.
+            </p>
+          </header>
+
+          <ol className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {etapas.map((etapa) => (
+              <li
+                key={etapa.titulo}
+                className="group rounded-md border border-border border-l-4 border-l-primary bg-surface p-6 transition-shadow hover:shadow-gov"
+              >
+                <span className="flex size-11 items-center justify-center rounded-md bg-primary-soft text-primary-dark">
+                  <etapa.icon className="size-5" aria-hidden />
+                </span>
+                <h3 className="mt-4 font-display text-lg font-bold text-primary-darker">
+                  {etapa.titulo}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{etapa.texto}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        {/* CONTEÚDO */}
+        <section id="conteudo" className="border-y border-border bg-surface">
+          <div className="mx-auto grid max-w-6xl gap-12 px-4 py-16 lg:grid-cols-2 lg:py-20">
+            <div>
+              <p className="text-sm font-bold uppercase tracking-wide text-primary">
+                O que está incluído
+              </p>
+              <h2 className="mt-2 font-display text-3xl font-extrabold text-primary-darker sm:text-4xl">
+                Tudo o que você recebe ao adquirir o acesso
+              </h2>
+              <p className="mt-3 text-muted-foreground">
+                Material objetivo, revisado e organizado para ser consultado no celular enquanto
+                você resolve cada etapa.
+              </p>
+
+              <ul className="mt-8 space-y-3">
+                {conteudos.map((item) => (
+                  <li key={item} className="flex items-start gap-3 text-sm text-foreground">
+                    <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-success" aria-hidden />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 lg:content-start">
+              {[
+                {
+                  icon: ShieldCheck,
+                  t: "Informação conferida",
+                  d: "Conteúdo revisado com base nas orientações oficiais vigentes e atualizado quando as regras mudam.",
+                },
+                {
+                  icon: Users,
+                  t: "Adultos e menores",
+                  d: "Trilhas separadas para quem tira o próprio passaporte e para responsáveis por crianças e adolescentes.",
+                },
+                {
+                  icon: Info,
+                  t: "Linguagem simples",
+                  d: "Sem juridiquês: cada termo técnico é explicado na hora em que aparece.",
+                },
+                {
+                  icon: Lock,
+                  t: "Entrega por e-mail",
+                  d: "Após a confirmação do pagamento, o guia em PDF chega no seu e-mail para ler no celular ou imprimir.",
+                },
+              ].map((c) => (
+                <div key={c.t} className="rounded-md border border-border bg-background p-6">
+                  <c.icon className="size-6 text-primary" aria-hidden />
+                  <h3 className="mt-3 font-display text-base font-bold text-primary-darker">
+                    {c.t}
+                  </h3>
+                  <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{c.d}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ACESSO / PREÇO */}
+        <section id="acesso" className="mx-auto max-w-6xl px-4 py-16 lg:py-20">
+          <div className="overflow-hidden rounded-lg border border-border bg-surface shadow-gov-lg">
+            <div className="gov-stripe h-1.5" aria-hidden />
+            <div className="grid gap-10 p-6 sm:p-8 lg:grid-cols-[1.2fr_0.8fr] lg:p-12">
+              <div>
+                <p className="text-sm font-bold uppercase tracking-wide text-primary">
+                  Como adquirir
+                </p>
+                <h2 className="mt-2 font-display text-3xl font-extrabold text-primary-darker sm:text-4xl">
+                  Pagamento único, enviado por e-mail
+                </h2>
+                <p className="mt-4 max-w-lg text-muted-foreground">
+                  Um valor único pelo guia completo em PDF, entregue no seu e-mail, com todas as
+                  atualizações futuras incluídas. A taxa oficial do passaporte não está inclusa e é
+                  paga diretamente ao órgão responsável.
+                </p>
+
+                <ul className="mt-8 grid gap-3 sm:grid-cols-2">
+                  {[
+                    "Entrega no seu e-mail após a confirmação",
+                    "Atualizações enviadas por e-mail",
+                    "Checklists imprimíveis inclusos",
+                    "Garantia de 7 dias",
+                  ].map((i) => (
+                    <li key={i} className="flex items-center gap-2 text-sm text-foreground">
+                      <CheckCircle2 className="size-4 shrink-0 text-success" aria-hidden />
+                      {i}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="flex flex-col items-center justify-center rounded-md border-2 border-primary bg-primary-soft/40 p-6 text-center sm:p-8">
+                <p className="text-sm font-medium text-primary-dark">
+                  Clique abaixo para garantir o seu acesso
+                </p>
+
+                <SolicitacaoDialog>
+                  <button
+                    type="button"
+                    className="focus-gov mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-6 py-3.5 text-base font-semibold text-primary-foreground transition-colors hover:bg-primary-dark"
+                  >
+                    Adquirir agora
+                    <ArrowRight className="size-4" aria-hidden />
+                  </button>
+                </SolicitacaoDialog>
+
+                <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+                  <Lock className="size-3.5" aria-hidden />
+                  Ambiente de pagamento seguro
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ */}
+        <section id="faq" className="border-t border-border bg-surface">
+          <div className="mx-auto max-w-3xl px-4 py-16 lg:py-20">
+            <p className="text-sm font-bold uppercase tracking-wide text-primary">Dúvidas</p>
+            <h2 className="mt-2 font-display text-3xl font-extrabold text-primary-darker sm:text-4xl">
+              Perguntas frequentes
+            </h2>
+
+            <div className="mt-8 divide-y divide-border border-y border-border">
+              {faq.map((item) => (
+                <details key={item.q} className="group py-4">
+                  <summary className="focus-gov flex cursor-pointer list-none items-center justify-between gap-4 font-display text-base font-bold text-primary-darker">
+                    {item.q}
+                    <span
+                      className="shrink-0 text-primary transition-transform group-open:rotate-45"
+                      aria-hidden
+                    >
+                      +
+                    </span>
+                  </summary>
+                  <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{item.a}</p>
+                </details>
+              ))}
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <GovFooter />
+    </div>
+  );
+}
+```
+----- FIM DA MENSAGEM 6 -----
+
+
+================================================================================
+MENSAGEM 7 de 7  -  SUBSTITUIR src/components/gov/Header.tsx
+================================================================================
+----- INICIO DA MENSAGEM 7 -----
+Substitua integralmente o conteúdo do arquivo `src/components/gov/Header.tsx` pelo código abaixo. Não refatore, não renomeie nada, não adicione comentários e não altere nenhum outro arquivo.
+
+```tsx
+import { BookMarked, User } from "lucide-react";
+
+export function GovHeader() {
+  return (
+    <header className="sticky top-0 z-50">
+      {/* Barra superior institucional */}
+      <div className="bg-primary-darker text-primary-foreground">
+        <div className="mx-auto flex h-8 max-w-6xl items-center justify-between gap-4 px-4 text-[11px] font-medium tracking-wide">
+          <span className="min-w-0 truncate uppercase opacity-90">Guia Digital Independente</span>
+          <nav aria-label="Atalhos" className="hidden gap-4 sm:flex">
+            <a href="#conteudo" className="hover:underline">
+              Conteúdo
+            </a>
+            <a href="#faq" className="hover:underline">
+              Dúvidas
+            </a>
+            <a href="#acesso" className="hover:underline">
+              Adquirir guia
+            </a>
+          </nav>
+        </div>
+      </div>
+
+      <div className="border-b border-border bg-surface">
+        <div className="mx-auto flex min-h-16 max-w-6xl items-center justify-between gap-3 px-4 py-2">
+          <a href="#" className="focus-gov flex min-w-0 items-center gap-3">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded bg-primary text-primary-foreground">
+              <BookMarked className="size-5" aria-hidden />
+            </span>
+            <span className="min-w-0 leading-tight">
+              <span className="block font-display text-base font-extrabold text-primary-dark sm:text-lg">
+                Guia do Passaporte
+              </span>
+              <span className="hidden text-[11px] font-medium text-muted-foreground sm:block">
+                Passo a passo do primeiro documento
+              </span>
+            </span>
+          </a>
+
+          <a
+            href="#acesso"
+            className="focus-gov inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-dark sm:px-5"
+          >
+            <User className="size-4" aria-hidden />
+            Solicitar
+          </a>
+        </div>
+      </div>
+      <div className="gov-stripe h-1" aria-hidden />
+    </header>
+  );
+}
+```
+----- FIM DA MENSAGEM 7 -----
