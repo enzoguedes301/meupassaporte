@@ -143,12 +143,16 @@ async function criarCobrancaAsaas(
     }),
   });
 
+  console.log("Status cobranca:", resp.status, "OK:", resp.ok);
+  const texto = await resp.text();
+  console.log("Resposta cobranca:", texto);
+
   if (!resp.ok) {
-    const erro = await resp.json();
-    throw new Error(erro.errors?.[0]?.detail || "Erro ao criar cobrança");
+    throw new Error(`Erro ${resp.status} ao criar cobrança: ${texto}`);
   }
 
-  const cobranca = await resp.json();
+  if (!texto) throw new Error("Resposta vazia ao criar cobrança");
+  const cobranca = JSON.parse(texto);
   return {
     id: cobranca.id,
     status: cobranca.status,
