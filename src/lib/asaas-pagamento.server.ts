@@ -81,10 +81,16 @@ async function criarOuBuscarClienteAsaas(
 
     if (respBusca.ok) {
       const texto = await respBusca.text();
+      console.log("Resposta Asaas buscar cliente:", texto);
+      if (!texto) throw new Error("Resposta vazia do Asaas");
       const dados = JSON.parse(texto);
       if (dados.data && dados.data.length > 0) {
         return { id: dados.data[0].id };
       }
+    } else {
+      const erro = await respBusca.text();
+      console.log("Erro ao buscar cliente:", respBusca.status, erro);
+      throw new Error(`Erro ${respBusca.status}: ${erro}`);
     }
 
     // Se não encontrar, criar novo cliente
