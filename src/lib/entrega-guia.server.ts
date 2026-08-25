@@ -1,12 +1,14 @@
-import fs from "fs";
-import path from "path";
-
-const PDF_PATH = path.join(process.cwd(), "public", "guia-primeiro-passaporte.pdf");
-
 async function lerPdfComoBase64(): Promise<string> {
   try {
-    const buffer = fs.readFileSync(PDF_PATH);
-    return buffer.toString("base64");
+    const response = await fetch(`${process.env.VERCEL_URL ? 'https://' + process.env.VERCEL_URL : 'http://localhost:3000'}/guia-primeiro-passaporte.pdf`);
+
+    if (!response.ok) {
+      throw new Error(`Falha ao buscar PDF: ${response.status}`);
+    }
+
+    const buffer = await response.arrayBuffer();
+    const base64 = Buffer.from(buffer).toString("base64");
+    return base64;
   } catch (erro) {
     console.error("Erro ao ler PDF:", erro);
     throw new Error("Não foi possível ler o arquivo PDF");
