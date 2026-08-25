@@ -74,7 +74,7 @@ async function criarOuBuscarClienteAsaas(
       `${ASAAS_BASE_URL}/customers?cpfCnpj=${cpf.replace(/\D/g, "")}`,
       {
         headers: {
-          "access-token": ASAAS_API_KEY,
+          "access_token": ASAAS_API_KEY,
         },
       }
     );
