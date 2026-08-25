@@ -28,7 +28,6 @@ export const Route = createFileRoute("/api/public/pagamentos/sigilopay")({
 
         // Nunca confiamos no corpo do webhook: confirmamos o status na API do gateway.
         const { buscarTransacao } = await import("@/lib/sigilopay.server");
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
         let status: string;
         try {
@@ -47,19 +46,45 @@ export const Route = createFileRoute("/api/public/pagamentos/sigilopay")({
                 ? "estornado"
                 : "pendente";
 
-        const { error } = await supabaseAdmin
-          .from("pedidos")
-          .update({ status: novoStatus })
-          .eq("transaction_id", transactionId);
-
-        if (error) {
-          console.error("Webhook: falha ao atualizar pedido", error);
-          return new Response("Erro ao atualizar pedido", { status: 500 });
+        const firebaseUrl = process.env.FIREBASE_DATABASE_URL;
+        if (firebaseUrl) {
+          try {
+            await fetch(
+              `${firebaseUrl}/pedidos.json?orderBy="transactionId"&equalTo="${transactionId}"`,
+              {
+                method: "PATCH",
+                body: JSON.stringify({ status: novoStatus }),
+              }
+            );
+          } catch (err) {
+            console.error("Webhook: falha ao atualizar pedido no Firebase", err);
+          }
         }
 
         if (novoStatus === "pago") {
-          const { entregarGuia } = await import("@/lib/entrega-guia.server");
-          await entregarGuia(transactionId);
+          const firebaseUrl = process.env.FIREBASE_DATABASE_URL;
+          if (firebaseUrl) {
+            try {
+              const respPedido = await fetch(
+                `${firebaseUrl}/pedidos.json?orderBy="transactionId"&equalTo="${transactionId}"`
+              );
+              const pedidos = await respPedido.json();
+
+              if (pedidos && Object.keys(pedidos).length > 0) {
+                const pedidoId = Object.keys(pedidos)[0];
+                const pedido = pedidos[pedidoId];
+
+                const { entregarGuia } = await import("@/lib/entrega-guia.server");
+                await entregarGuia({
+                  transactionId,
+                  nome: pedido.nome,
+                  email: pedido.email,
+                });
+              }
+            } catch (err) {
+              console.error("Erro ao recuperar dados do pedido:", err);
+            }
+          }
         }
 
         return new Response("ok");

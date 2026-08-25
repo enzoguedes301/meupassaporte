@@ -1,63 +1,50 @@
-import { GUIA_BUCKET, GUIA_PATH } from "./guia.constants";
+import fs from "fs";
+import path from "path";
 
-const EXPIRACAO_SEGUNDOS = 72 * 60 * 60; // 72 horas
+const PDF_PATH = path.join(process.cwd(), "public", "guia-primeiro-passaporte.pdf");
 
-/**
- * Gera o link assinado do guia e envia por e-mail ao comprador.
- * Idempotente: só envia se `guia_enviado_em` ainda estiver vazio.
- * Nunca lança erro — falhas são apenas registradas em log.
- */
-export async function entregarGuia(transactionId: string): Promise<void> {
+async function lerPdfComoBase64(): Promise<string> {
   try {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const buffer = fs.readFileSync(PDF_PATH);
+    return buffer.toString("base64");
+  } catch (erro) {
+    console.error("Erro ao ler PDF:", erro);
+    throw new Error("Não foi possível ler o arquivo PDF");
+  }
+}
 
-    const { data: pedido, error } = await supabaseAdmin
-      .from("pedidos")
-      .select("id, nome, email, guia_enviado_em")
-      .eq("transaction_id", transactionId)
-      .maybeSingle();
+export async function entregarGuia(input: {
+  transactionId: string;
+  nome: string;
+  email: string;
+}): Promise<void> {
+  try {
+    const { enviarGuiaPorEmail } = await import("./resend-email.server");
 
-    if (error || !pedido) {
-      console.error("Entrega do guia: pedido não encontrado", transactionId, error);
-      return;
-    }
+    const pdfBase64 = await lerPdfComoBase64();
 
-    if (pedido.guia_enviado_em) return; // já entregue
+    const resultado = await enviarGuiaPorEmail({
+      email: input.email,
+      nome: input.nome,
+      pdfBase64,
+    });
 
-    // Reserva o envio antes de disparar o e-mail (evita duplicidade em webhooks simultâneos)
-    const { data: reservado } = await supabaseAdmin
-      .from("pedidos")
-      .update({ guia_enviado_em: new Date().toISOString() })
-      .eq("id", pedido.id)
-      .is("guia_enviado_em", null)
-      .select("id")
-      .maybeSingle();
-
-    if (!reservado) return; // outro processo já está enviando
-
-    const { data: signed, error: signedError } = await supabaseAdmin.storage
-      .from(GUIA_BUCKET)
-      .createSignedUrl(GUIA_PATH, EXPIRACAO_SEGUNDOS);
-
-    if (signedError || !signed?.signedUrl) {
-      console.error("Entrega do guia: falha ao gerar link assinado", signedError);
-      await supabaseAdmin.from("pedidos").update({ guia_enviado_em: null }).eq("id", pedido.id);
-      return;
-    }
-
-    try {
-      const { enviarEmailGuia } = await import("./email-guia.server");
-      await enviarEmailGuia({
-        email: pedido.email,
-        nome: pedido.nome,
-        link: signed.signedUrl,
-        pedidoId: pedido.id,
-      });
-    } catch (sendError) {
-      console.error("Entrega do guia: falha ao enviar e-mail", sendError);
-      await supabaseAdmin.from("pedidos").update({ guia_enviado_em: null }).eq("id", pedido.id);
+    if (resultado.sucesso) {
+      console.log(
+        "Guia entregue com sucesso para:",
+        input.email,
+        "- Transação:",
+        input.transactionId
+      );
+    } else {
+      console.error(
+        "Falha ao enviar guia para:",
+        input.email,
+        "Erro:",
+        resultado.erro
+      );
     }
   } catch (err) {
-    console.error("Entrega do guia: erro inesperado", err);
+    console.error("Erro ao entregar guia:", err);
   }
 }
