@@ -74,7 +74,7 @@ async function criarOuBuscarClienteAsaas(
       `${ASAAS_BASE_URL}/customers?cpfCnpj=${cpf.replace(/\D/g, "")}`,
       {
         headers: {
-          "access_token": ASAAS_API_KEY,
+          "Authorization": `Bearer ${ASAAS_API_KEY}`,
         },
       }
     );
@@ -98,7 +98,7 @@ async function criarOuBuscarClienteAsaas(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "access_token": ASAAS_API_KEY,
+        "Authorization": `Bearer ${ASAAS_API_KEY}`,
       },
       body: JSON.stringify({
         name: nome,
@@ -132,7 +132,7 @@ async function criarCobrancaAsaas(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "access_token": ASAAS_API_KEY,
+      "Authorization": `Bearer ${ASAAS_API_KEY}`,
     },
     body: JSON.stringify({
       customerId: clienteId,
@@ -168,7 +168,7 @@ async function gerarQrCodePix(
 ): Promise<{ qrCode: string; qrCodeUrl: string; pixCopyPaste: string }> {
   const resp = await fetch(`${ASAAS_BASE_URL}/charges/${cobrancaId}/pix/qrcode`, {
     headers: {
-      "access_token": ASAAS_API_KEY,
+      "Authorization": `Bearer ${ASAAS_API_KEY}`,
     },
   });
 
@@ -194,7 +194,7 @@ export async function verificarStatusPagamento(cobrancaId: string): Promise<stri
 
   const resp = await fetch(`${ASAAS_BASE_URL}/charges/${cobrancaId}`, {
     headers: {
-      "access_token": ASAAS_API_KEY,
+      "Authorization": `Bearer ${ASAAS_API_KEY}`,
     },
   });
 
