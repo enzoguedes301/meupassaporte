@@ -2,7 +2,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 const VALOR_GUIA = 239.9;
-const FIREBASE_DB_URL = "https://meupassaporte-ac920-default-rtdb.firebaseio.com";
 
 const dadosSchema = z.object({
   nome: z.string().trim().min(5).max(120),
@@ -19,101 +18,58 @@ const dadosSchema = z.object({
 export const criarPagamentoPix = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => dadosSchema.parse(input))
   .handler(async ({ data }) => {
-    const { criarPagamentoAsaas } = await import("@/lib/asaas-pagamento.server");
+    const { criarCobrancaPix } = await import("@/lib/sigilopay.server");
 
     const pedidoId = crypto.randomUUID();
-    const agora = new Date().toISOString();
 
-    const insertResp = await fetch(`${FIREBASE_DB_URL}/orders/${pedidoId}.json`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id: pedidoId,
-        nome: data.nome,
+    const resultado = await criarCobrancaPix({
+      identifier: pedidoId,
+      amount: VALOR_GUIA,
+      client: {
+        name: data.nome,
         email: data.email,
-        cpf: data.cpf,
+        document: data.cpf.replace(/\D/g, ""),
+        phone: data.telefone,
+      },
+      products: [
+        {
+          id: "guia-passaporte",
+          name: "Guia do Primeiro Passaporte (PDF)",
+          quantity: 1,
+          price: VALOR_GUIA,
+        },
+      ],
+      metadata: {
         nascimento: data.nascimento,
-        gateway: "asaas",
-        amount_total: Math.round(VALOR_GUIA * 100),
-        currency: "BRL",
-        status: "pendente",
-        created_at: agora,
-        updated_at: agora,
-      }),
-    });
-
-    if (!insertResp.ok) {
-      const erro = await insertResp.text();
-      console.error("Falha ao registrar pedido:", erro);
-      throw new Error("Não foi possível registrar seu pedido. Tente novamente.");
-    }
-
-    const cobranca = await criarPagamentoAsaas({
-      nome: data.nome,
-      email: data.email,
-      cpf: data.cpf,
-      valor: VALOR_GUIA,
-      descricao: "Guia do Primeiro Passaporte (PDF)",
-    });
-
-    await fetch(`${FIREBASE_DB_URL}/orders/${pedidoId}.json`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        transaction_id: cobranca.id,
-        pix_code: cobranca.pixCopyPaste ?? null,
-        pix_image: cobranca.qrCodeUrl ?? null,
-        updated_at: new Date().toISOString(),
-      }),
+      },
     });
 
     return {
       pedidoId,
-      pixCode: cobranca.pixCopyPaste ?? "",
-      pixImage: cobranca.qrCodeUrl ?? "",
+      transactionId: resultado.transactionId,
+      pixCode: resultado.pix?.code ?? "",
+      pixImage: resultado.pix?.image ?? "",
       valor: VALOR_GUIA,
     };
   });
 
 export const consultarPagamento = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => z.object({ pedidoId: z.string() }).parse(input))
+  .inputValidator((input: unknown) => z.object({ transactionId: z.string() }).parse(input))
   .handler(async ({ data }) => {
-    const { verificarStatusPagamento } = await import("@/lib/asaas-pagamento.server");
+    const { buscarTransacao } = await import("@/lib/sigilopay.server");
 
-    const getResp = await fetch(`${FIREBASE_DB_URL}/orders/${data.pedidoId}.json`);
+    try {
+      const transacao = await buscarTransacao(data.transactionId);
 
-    if (!getResp.ok) {
-      return { status: "nao_encontrado" as const, transactionId: null };
-    }
-
-    const pedido = await getResp.json();
-
-    if (!pedido) return { status: "nao_encontrado" as const, transactionId: null };
-    if (pedido.status === "pago")
-      return { status: "pago" as const, transactionId: pedido.transaction_id ?? null };
-
-    if (pedido.transaction_id) {
-      try {
-        const statusAsaas = await verificarStatusPagamento(pedido.transaction_id);
-        if (statusAsaas === "CONFIRMED") {
-          await fetch(`${FIREBASE_DB_URL}/orders/${data.pedidoId}.json`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              status: "pago",
-              updated_at: new Date().toISOString(),
-            }),
-          });
-          const { entregarGuia } = await import("@/lib/entrega-guia.server");
-          await entregarGuia(pedido.transaction_id);
-          return { status: "pago" as const, transactionId: pedido.transaction_id };
-        }
-        if (statusAsaas === "FAILED")
-          return { status: "falhou" as const, transactionId: pedido.transaction_id };
-      } catch (err) {
-        console.error("Falha ao consultar transação:", err);
+      if (transacao.status === "COMPLETED") {
+        return { status: "pago" as const, transactionId: data.transactionId };
       }
+      if (transacao.status === "FAILED") {
+        return { status: "falhou" as const, transactionId: data.transactionId };
+      }
+      return { status: "pendente" as const, transactionId: data.transactionId };
+    } catch (err) {
+      console.error("Falha ao consultar transação:", err);
+      return { status: "erro" as const, transactionId: data.transactionId };
     }
-
-    return { status: "pendente" as const, transactionId: pedido.transaction_id ?? null };
   });
