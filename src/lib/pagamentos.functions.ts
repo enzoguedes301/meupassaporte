@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 const VALOR_GUIA = 239.9;
+const FIREBASE_DB_URL = "https://meupassaporte-ac920-default-rtdb.firebaseio.com";
 
 const dadosSchema = z.object({
   nome: z.string().trim().min(5).max(120),
@@ -19,28 +20,31 @@ export const criarPagamentoPix = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => dadosSchema.parse(input))
   .handler(async ({ data }) => {
     const { criarPagamentoAsaas } = await import("@/lib/asaas-pagamento.server");
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const identifier = crypto.randomUUID();
+    const pedidoId = crypto.randomUUID();
+    const agora = new Date().toISOString();
 
-    const { data: pedido, error } = await supabaseAdmin
-      .from("pedidos")
-      .insert({
+    const insertResp = await fetch(`${FIREBASE_DB_URL}/orders/${pedidoId}.json`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: pedidoId,
         nome: data.nome,
         email: data.email,
         cpf: data.cpf,
         nascimento: data.nascimento,
-        identifier,
         gateway: "asaas",
         amount_total: Math.round(VALOR_GUIA * 100),
         currency: "BRL",
         status: "pendente",
-      })
-      .select("id")
-      .single();
+        created_at: agora,
+        updated_at: agora,
+      }),
+    });
 
-    if (error || !pedido) {
-      console.error("Falha ao registrar pedido:", error);
+    if (!insertResp.ok) {
+      const erro = await insertResp.text();
+      console.error("Falha ao registrar pedido:", erro);
       throw new Error("Não foi possível registrar seu pedido. Tente novamente.");
     }
 
@@ -52,17 +56,19 @@ export const criarPagamentoPix = createServerFn({ method: "POST" })
       descricao: "Guia do Primeiro Passaporte (PDF)",
     });
 
-    await supabaseAdmin
-      .from("pedidos")
-      .update({
+    await fetch(`${FIREBASE_DB_URL}/orders/${pedidoId}.json`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
         transaction_id: cobranca.id,
         pix_code: cobranca.pixCopyPaste ?? null,
         pix_image: cobranca.qrCodeUrl ?? null,
-      })
-      .eq("id", pedido.id);
+        updated_at: new Date().toISOString(),
+      }),
+    });
 
     return {
-      pedidoId: pedido.id as string,
+      pedidoId,
       pixCode: cobranca.pixCopyPaste ?? "",
       pixImage: cobranca.qrCodeUrl ?? "",
       valor: VALOR_GUIA,
@@ -70,16 +76,17 @@ export const criarPagamentoPix = createServerFn({ method: "POST" })
   });
 
 export const consultarPagamento = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => z.object({ pedidoId: z.string().uuid() }).parse(input))
+  .inputValidator((input: unknown) => z.object({ pedidoId: z.string() }).parse(input))
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { verificarStatusPagamento } = await import("@/lib/asaas-pagamento.server");
 
-    const { data: pedido } = await supabaseAdmin
-      .from("pedidos")
-      .select("id, status, transaction_id")
-      .eq("id", data.pedidoId)
-      .maybeSingle();
+    const getResp = await fetch(`${FIREBASE_DB_URL}/orders/${data.pedidoId}.json`);
+
+    if (!getResp.ok) {
+      return { status: "nao_encontrado" as const, transactionId: null };
+    }
+
+    const pedido = await getResp.json();
 
     if (!pedido) return { status: "nao_encontrado" as const, transactionId: null };
     if (pedido.status === "pago")
@@ -89,10 +96,14 @@ export const consultarPagamento = createServerFn({ method: "POST" })
       try {
         const statusAsaas = await verificarStatusPagamento(pedido.transaction_id);
         if (statusAsaas === "CONFIRMED") {
-          await supabaseAdmin
-            .from("pedidos")
-            .update({ status: "pago" })
-            .eq("id", pedido.id);
+          await fetch(`${FIREBASE_DB_URL}/orders/${data.pedidoId}.json`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              status: "pago",
+              updated_at: new Date().toISOString(),
+            }),
+          });
           const { entregarGuia } = await import("@/lib/entrega-guia.server");
           await entregarGuia(pedido.transaction_id);
           return { status: "pago" as const, transactionId: pedido.transaction_id };
