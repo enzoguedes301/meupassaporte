@@ -396,7 +396,7 @@ function Index() {
                 <SolicitacaoDialog>
                   <button
                     type="button"
-                    className="focus-gov mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-6 py-3.5 text-base font-semibold text-primary-foreground transition-colors hover:bg-primary-dark"
+                    className="focus-gov mt-7 inline-flex w-full items-center justify-center gap-2 rounded-none bg-primary px-6 py-3.5 text-base font-semibold text-primary-foreground transition-colors hover:bg-primary-dark"
                   >
                     Adquirir agora
                     <ArrowRight className="size-4" aria-hidden />

@@ -43,7 +43,7 @@ export function HeroSolicitacao() {
         <button
           type="button"
           onClick={comecar}
-          className="focus-gov inline-flex h-14 w-full items-center justify-center gap-2 rounded-full bg-primary px-7 text-base font-semibold text-primary-foreground shadow-gov transition-colors hover:bg-primary-dark sm:w-auto"
+          className="focus-gov inline-flex h-14 w-full items-center justify-center gap-2 rounded-none bg-primary px-7 text-base font-semibold text-primary-foreground shadow-gov transition-colors hover:bg-primary-dark sm:w-auto"
         >
           Começar agora
           <ArrowRight className="size-4" aria-hidden />

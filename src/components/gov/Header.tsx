@@ -27,7 +27,7 @@ export function GovHeader() {
 
           <a
             href="#acesso"
-            className="focus-gov inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-dark sm:px-5"
+            className="focus-gov inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-none bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-dark sm:px-5"
           >
             <User className="size-4" aria-hidden />
             Comprar guia
