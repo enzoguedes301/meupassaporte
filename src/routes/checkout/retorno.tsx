@@ -7,7 +7,6 @@ import { CheckCircle2, Mail, Package } from "lucide-react";
 import { GovHeader } from "@/components/gov/Header";
 import { GovFooter } from "@/components/gov/Footer";
 import { consultarPagamento } from "@/lib/pagamentos.functions";
-import { dispararConversaoCompra } from "@/lib/gtag";
 
 export const Route = createFileRoute("/checkout/retorno")({
   validateSearch: (search: Record<string, unknown>): { session_id?: string } => ({
@@ -69,12 +68,6 @@ function Retorno() {
       }
     }
   }, []);
-
-  useEffect(() => {
-    if (data?.status === "pago" && data.transactionId) {
-      dispararConversaoCompra(data.transactionId);
-    }
-  }, [data]);
 
 
   return (
