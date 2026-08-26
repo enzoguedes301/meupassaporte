@@ -66,23 +66,67 @@ export const criarPagamentoPix = createServerFn({ method: "POST" })
     };
   });
 
+/**
+ * Consulta o pedido pelo id que a página de retorno tem na URL.
+ *
+ * O status gravado no Firebase pelo webhook é a fonte principal. Se ainda
+ * estiver pendente, confirmamos direto no gateway — assim o cliente não fica
+ * preso numa tela de "aguardando" caso o webhook atrase ou não chegue, e a
+ * entrega do guia acontece mesmo assim.
+ */
 export const consultarPagamento = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => z.object({ transactionId: z.string() }).parse(input))
+  .inputValidator((input: unknown) =>
+    z.object({ pedidoId: z.string().uuid() }).parse(input),
+  )
   .handler(async ({ data }) => {
-    const { buscarTransacao } = await import("@/lib/sigilopay.server");
+    const { firebaseFetch, atualizarStatusPedido } = await import(
+      "@/lib/firebase.server"
+    );
+
+    let pedido: { transactionId: string; nome: string; email: string; status: string } | null;
+    try {
+      const resposta = await firebaseFetch(`/pedidos/${data.pedidoId}.json`);
+      pedido = await resposta.json();
+    } catch (err) {
+      console.error("Falha ao ler pedido:", err);
+      return { status: "erro" as const, transactionId: null };
+    }
+
+    if (!pedido) return { status: "nao-encontrado" as const, transactionId: null };
+
+    if (pedido.status === "pago") {
+      return { status: "pago" as const, transactionId: pedido.transactionId };
+    }
+    if (pedido.status === "falhou" || pedido.status === "estornado") {
+      return { status: "falhou" as const, transactionId: pedido.transactionId };
+    }
 
     try {
-      const transacao = await buscarTransacao(data.transactionId);
+      const { buscarTransacao } = await import("@/lib/sigilopay.server");
+      const transacao = await buscarTransacao(pedido.transactionId);
 
       if (transacao.status === "COMPLETED") {
-        return { status: "pago" as const, transactionId: data.transactionId };
+        await atualizarStatusPedido(data.pedidoId, "pago");
+
+        // Rede de segurança: se o webhook não entregou, entregamos aqui.
+        const { entregarGuia } = await import("@/lib/entrega-guia.server");
+        await entregarGuia({
+          transactionId: pedido.transactionId,
+          nome: pedido.nome,
+          email: pedido.email,
+        });
+
+        return { status: "pago" as const, transactionId: pedido.transactionId };
       }
+
       if (transacao.status === "FAILED") {
-        return { status: "falhou" as const, transactionId: data.transactionId };
+        await atualizarStatusPedido(data.pedidoId, "falhou");
+        return { status: "falhou" as const, transactionId: pedido.transactionId };
       }
-      return { status: "pendente" as const, transactionId: data.transactionId };
+
+      return { status: "pendente" as const, transactionId: pedido.transactionId };
     } catch (err) {
       console.error("Falha ao consultar transação:", err);
-      return { status: "erro" as const, transactionId: data.transactionId };
+      return { status: "erro" as const, transactionId: pedido.transactionId };
     }
   });
