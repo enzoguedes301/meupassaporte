@@ -1,6 +1,15 @@
 async function lerPdfComoBase64(): Promise<string> {
   try {
-    const response = await fetch(`${process.env.VERCEL_URL ? 'https://' + process.env.VERCEL_URL : 'http://localhost:3000'}/guia-primeiro-passaporte.pdf`);
+    let url: string;
+    if (process.env.VERCEL_URL) {
+      url = `https://${process.env.VERCEL_URL}/guia-primeiro-passaporte.pdf`;
+    } else {
+      // Desenvolvimento local - usar porta dinâmica
+      const host = process.env.HOST || '127.0.0.1';
+      const port = process.env.PORT || '3000';
+      url = `http://${host}:${port}/guia-primeiro-passaporte.pdf`;
+    }
+    const response = await fetch(url);
 
     if (!response.ok) {
       throw new Error(`Falha ao buscar PDF: ${response.status}`);

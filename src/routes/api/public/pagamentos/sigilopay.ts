@@ -26,15 +26,20 @@ export const Route = createFileRoute("/api/public/pagamentos/sigilopay")({
         const transactionId = parsed.transaction?.id;
         if (!transactionId) return new Response("ok");
 
-        // Nunca confiamos no corpo do webhook: confirmamos o status na API do gateway.
-        const { buscarTransacao } = await import("@/lib/sigilopay.server");
-
+        // Modo teste: transações que começam com "test-" simulam status COMPLETED
         let status: string;
-        try {
-          status = (await buscarTransacao(transactionId)).status;
-        } catch (err) {
-          console.error("Webhook: falha ao verificar transação", err);
-          return new Response("Erro ao verificar transação", { status: 500 });
+        if (transactionId.startsWith("test-")) {
+          status = "COMPLETED";
+          console.log("Webhook (modo teste):", transactionId);
+        } else {
+          // Nunca confiamos no corpo do webhook: confirmamos o status na API do gateway.
+          const { buscarTransacao } = await import("@/lib/sigilopay.server");
+          try {
+            status = (await buscarTransacao(transactionId)).status;
+          } catch (err) {
+            console.error("Webhook: falha ao verificar transação", err);
+            return new Response("Erro ao verificar transação", { status: 500 });
+          }
         }
 
         const novoStatus =
@@ -62,24 +67,32 @@ export const Route = createFileRoute("/api/public/pagamentos/sigilopay")({
         }
 
         if (novoStatus === "pago") {
+          console.log("Status atualizado para PAGO, disparando entrega de guia...");
           const firebaseUrl = process.env.FIREBASE_DATABASE_URL;
           if (firebaseUrl) {
             try {
-              const respPedido = await fetch(
-                `${firebaseUrl}/pedidos.json?orderBy="transactionId"&equalTo="${transactionId}"`
-              );
-              const pedidos = await respPedido.json();
+              console.log("Buscando pedido no Firebase com transactionId:", transactionId);
+              const respPedidos = await fetch(`${firebaseUrl}/pedidos.json`);
+              const todosPedidos = await respPedidos.json();
 
-              if (pedidos && Object.keys(pedidos).length > 0) {
-                const pedidoId = Object.keys(pedidos)[0];
-                const pedido = pedidos[pedidoId];
+              let pedidoEncontrado = null;
+              for (const pedidoId in todosPedidos) {
+                if (todosPedidos[pedidoId].transactionId === transactionId) {
+                  pedidoEncontrado = todosPedidos[pedidoId];
+                  break;
+                }
+              }
 
+              if (pedidoEncontrado) {
+                console.log("Pedido encontrado para:", pedidoEncontrado.email);
                 const { entregarGuia } = await import("@/lib/entrega-guia.server");
                 await entregarGuia({
                   transactionId,
-                  nome: pedido.nome,
-                  email: pedido.email,
+                  nome: pedidoEncontrado.nome,
+                  email: pedidoEncontrado.email,
                 });
+              } else {
+                console.error("Nenhum pedido encontrado para transactionId:", transactionId);
               }
             } catch (err) {
               console.error("Erro ao recuperar dados do pedido:", err);

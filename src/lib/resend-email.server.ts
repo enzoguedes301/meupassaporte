@@ -9,7 +9,7 @@ export async function enviarGuiaPorEmail(input: {
 }): Promise<{ sucesso: boolean; erro?: string }> {
   try {
     const resultado = await resend.emails.send({
-      from: "noreply@meupassaporte.digital",
+      from: "onboarding@resend.dev",
       to: input.email,
       subject: "Seu Guia do Primeiro Passaporte",
       html: `
