@@ -7,6 +7,8 @@ import {
   Lock,
 } from "lucide-react";
 
+import { marcarEtapa } from "@/lib/funil.rastreio";
+import type { EtapaFunil } from "@/lib/funil.constants";
 import { TIPOS_SOLICITACAO, labelDoTipo } from "@/lib/solicitacao";
 import { PAISES, UFS } from "@/lib/paises";
 import { cn } from "@/lib/utils";
@@ -202,6 +204,11 @@ export function CheckoutForm() {
     setErrors(novoErro);
     return Object.keys(novoErro).length === 0;
   }
+
+  // Registra a etapa alcançada, inclusive a primeira ao abrir o formulário.
+  useEffect(() => {
+    if (etapa >= 1 && etapa <= 4) marcarEtapa(`form${etapa}` as EtapaFunil);
+  }, [etapa]);
 
   function avancar() {
     let valido = false;

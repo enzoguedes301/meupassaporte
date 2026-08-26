@@ -1,6 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 
 import { VALOR_GUIA } from "@/lib/guia.constants";
+import { ETAPAS_FUNIL, ROTULO_ETAPA } from "@/lib/funil.constants";
+
+export type EtapaPainel = {
+  chave: string;
+  rotulo: string;
+  total: number;
+};
 
 export type LeadPainel = {
   id: string;
@@ -29,14 +36,23 @@ export const listarLeads = createServerFn({ method: "GET" }).handler(async () =>
   const { adminSession } = await import("./admin-guia.server");
   const session = await adminSession();
   if (!session.data.unlocked) {
-    return { autorizado: false as const, leads: [], resumo: null };
+    return { autorizado: false as const, leads: [], resumo: null, funil: [] };
   }
 
   const { firebaseFetch } = await import("./firebase.server");
-  const resposta = await firebaseFetch("/pedidos.json");
-  const bruto = (await resposta.json()) as Record<
+  const [respPedidos, respFunil] = await Promise.all([
+    firebaseFetch("/pedidos.json"),
+    firebaseFetch("/funil.json"),
+  ]);
+
+  const bruto = (await respPedidos.json()) as Record<
     string,
     Omit<LeadPainel, "id">
+  > | null;
+
+  const visitantes = (await respFunil.json()) as Record<
+    string,
+    Record<string, string>
   > | null;
 
   const leads: LeadPainel[] = Object.entries(bruto ?? {})
@@ -61,5 +77,18 @@ export const listarLeads = createServerFn({ method: "GET" }).handler(async () =>
     pagosHoje: leads.filter((l) => deHoje(l) && l.status === "pago").length,
   };
 
-  return { autorizado: true as const, leads, resumo };
+  // Etapas de navegação vêm do /funil; as duas de dinheiro vêm dos pedidos,
+  // que são a fonte autoritativa.
+  const registros = Object.values(visitantes ?? {});
+  const funil: EtapaPainel[] = [
+    ...ETAPAS_FUNIL.map((etapa) => ({
+      chave: etapa,
+      rotulo: ROTULO_ETAPA[etapa],
+      total: registros.filter((r) => r[etapa]).length,
+    })),
+    { chave: "pix", rotulo: "Gerou o PIX", total: leads.length },
+    { chave: "pago", rotulo: "Pagou", total: pagos },
+  ];
+
+  return { autorizado: true as const, leads, resumo, funil };
 });

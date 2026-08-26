@@ -15,7 +15,12 @@ import {
 import { GovHeader } from "@/components/gov/Header";
 import { GovFooter } from "@/components/gov/Footer";
 import { entrarAdmin, sairAdmin } from "@/lib/admin-guia.functions";
-import { listarLeads, type LeadPainel, type ResumoPainel } from "@/lib/painel.functions";
+import {
+  listarLeads,
+  type EtapaPainel,
+  type LeadPainel,
+  type ResumoPainel,
+} from "@/lib/painel.functions";
 
 export const Route = createFileRoute("/admin/painel")({
   ssr: false,
@@ -64,6 +69,7 @@ function Painel() {
 
   const [leads, setLeads] = useState<LeadPainel[]>([]);
   const [resumo, setResumo] = useState<ResumoPainel | null>(null);
+  const [funil, setFunil] = useState<EtapaPainel[]>([]);
 
   const [busca, setBusca] = useState("");
   const [filtro, setFiltro] = useState<"todos" | "pago" | "pendente">("todos");
@@ -75,6 +81,7 @@ function Painel() {
       setLiberado(r.autorizado);
       setLeads(r.leads);
       setResumo(r.resumo);
+      setFunil(r.funil);
     } finally {
       setAtualizando(false);
     }
@@ -115,6 +122,7 @@ function Painel() {
     setLiberado(false);
     setLeads([]);
     setResumo(null);
+    setFunil([]);
   }
 
   const visiveis = useMemo(() => {
@@ -273,6 +281,8 @@ function Painel() {
             </div>
           )}
 
+          <Funil etapas={funil} />
+
           <div className="mt-8 rounded-lg border border-border bg-card">
             <div className="flex flex-wrap items-center gap-3 border-b border-border p-4">
               <div className="relative min-w-[200px] flex-1">
@@ -371,6 +381,73 @@ function Painel() {
       </main>
       <GovFooter />
     </>
+  );
+}
+
+function Funil({ etapas }: { etapas: EtapaPainel[] }) {
+  const topo = etapas[0]?.total ?? 0;
+
+  if (!topo) {
+    return (
+      <div className="mt-8 rounded-lg border border-border bg-card p-8 text-center">
+        <h2 className="font-display text-lg font-bold text-primary-darker">Funil</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Ainda não há visitas registradas. As etapas começam a aparecer assim que
+          alguém abrir o site.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-8 rounded-lg border border-border bg-card p-6">
+      <h2 className="font-display text-lg font-bold text-primary-darker">Funil</h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Pessoas distintas que chegaram a cada etapa.
+      </p>
+
+      <div className="mt-6 space-y-3">
+        {etapas.map((etapa, i) => {
+          const anterior = i === 0 ? etapa.total : etapas[i - 1].total;
+          const largura = topo ? (etapa.total / topo) * 100 : 0;
+          const doTopo = topo ? (etapa.total / topo) * 100 : 0;
+          const perdaAqui = anterior - etapa.total;
+          const pago = etapa.chave === "pago";
+
+          return (
+            <div key={etapa.chave}>
+              <div className="flex items-baseline justify-between gap-4 text-sm">
+                <span className="font-medium text-foreground">{etapa.rotulo}</span>
+                <span className="shrink-0 tabular-nums text-muted-foreground">
+                  <strong className="text-foreground">{etapa.total}</strong>
+                  {" · "}
+                  {doTopo.toFixed(0)}%
+                  {i > 0 && perdaAqui > 0 && (
+                    <span className="text-destructive"> · −{perdaAqui}</span>
+                  )}
+                </span>
+              </div>
+
+              <div className="mt-1.5 h-7 w-full overflow-hidden rounded bg-muted">
+                <div
+                  className={`h-full rounded transition-all ${
+                    pago ? "bg-success" : "bg-primary"
+                  }`}
+                  style={{ width: `${Math.max(largura, etapa.total ? 1.5 : 0)}%` }}
+                  role="img"
+                  aria-label={`${etapa.rotulo}: ${etapa.total} pessoas, ${doTopo.toFixed(0)}% do topo do funil`}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <p className="mt-5 border-t border-border pt-4 text-xs text-muted-foreground">
+        A porcentagem é sobre o topo do funil. O número em vermelho é quanta gente se
+        perdeu na passagem da etapa anterior para esta — é ali que vale mexer.
+      </p>
+    </div>
   );
 }
 

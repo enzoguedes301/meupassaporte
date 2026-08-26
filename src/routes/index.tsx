@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   ArrowRight,
@@ -16,6 +17,7 @@ import {
 
 import { GovHeader } from "@/components/gov/Header";
 import { GovFooter } from "@/components/gov/Footer";
+import { marcarEtapa } from "@/lib/funil.rastreio";
 import { HeroSolicitacao } from "@/components/gov/HeroSolicitacao";
 import { SolicitacaoDialog } from "@/components/gov/SolicitacaoDialog";
 import heroImage from "@/assets/hero-passaporte.png";
@@ -197,6 +199,10 @@ const faq = [
 ];
 
 function Index() {
+  useEffect(() => {
+    marcarEtapa("site");
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       <GovHeader />
