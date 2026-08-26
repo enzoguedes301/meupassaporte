@@ -17,6 +17,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as CheckoutIndexRouteImport } from './routes/checkout/index'
 import { Route as CheckoutRetornoRouteImport } from './routes/checkout/retorno'
 import { Route as AdminUploadGuiaRouteImport } from './routes/admin/upload-guia'
+import { Route as AdminPainelRouteImport } from './routes/admin/painel'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as ApiPublicPagamentosSigilopayRouteImport } from './routes/api/public/pagamentos/sigilopay'
 
@@ -60,6 +61,11 @@ const AdminUploadGuiaRoute = AdminUploadGuiaRouteImport.update({
   path: '/admin/upload-guia',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminPainelRoute = AdminPainelRouteImport.update({
+  id: '/admin/painel',
+  path: '/admin/painel',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LovableEmailTransactionalPreviewRoute =
   LovableEmailTransactionalPreviewRouteImport.update({
     id: '/lovable/email/transactional/preview',
@@ -79,6 +85,7 @@ export interface FileRoutesByFullPath {
   '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/termos-de-uso': typeof TermosDeUsoRoute
+  '/admin/painel': typeof AdminPainelRoute
   '/admin/upload-guia': typeof AdminUploadGuiaRoute
   '/checkout/retorno': typeof CheckoutRetornoRoute
   '/checkout/': typeof CheckoutIndexRoute
@@ -91,6 +98,7 @@ export interface FileRoutesByTo {
   '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/termos-de-uso': typeof TermosDeUsoRoute
+  '/admin/painel': typeof AdminPainelRoute
   '/admin/upload-guia': typeof AdminUploadGuiaRoute
   '/checkout/retorno': typeof CheckoutRetornoRoute
   '/checkout': typeof CheckoutIndexRoute
@@ -104,6 +112,7 @@ export interface FileRoutesById {
   '/politica-de-privacidade': typeof PoliticaDePrivacidadeRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/termos-de-uso': typeof TermosDeUsoRoute
+  '/admin/painel': typeof AdminPainelRoute
   '/admin/upload-guia': typeof AdminUploadGuiaRoute
   '/checkout/retorno': typeof CheckoutRetornoRoute
   '/checkout/': typeof CheckoutIndexRoute
@@ -118,6 +127,7 @@ export interface FileRouteTypes {
     | '/politica-de-privacidade'
     | '/sitemap.xml'
     | '/termos-de-uso'
+    | '/admin/painel'
     | '/admin/upload-guia'
     | '/checkout/retorno'
     | '/checkout/'
@@ -130,6 +140,7 @@ export interface FileRouteTypes {
     | '/politica-de-privacidade'
     | '/sitemap.xml'
     | '/termos-de-uso'
+    | '/admin/painel'
     | '/admin/upload-guia'
     | '/checkout/retorno'
     | '/checkout'
@@ -142,6 +153,7 @@ export interface FileRouteTypes {
     | '/politica-de-privacidade'
     | '/sitemap.xml'
     | '/termos-de-uso'
+    | '/admin/painel'
     | '/admin/upload-guia'
     | '/checkout/retorno'
     | '/checkout/'
@@ -155,6 +167,7 @@ export interface RootRouteChildren {
   PoliticaDePrivacidadeRoute: typeof PoliticaDePrivacidadeRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermosDeUsoRoute: typeof TermosDeUsoRoute
+  AdminPainelRoute: typeof AdminPainelRoute
   AdminUploadGuiaRoute: typeof AdminUploadGuiaRoute
   CheckoutRetornoRoute: typeof CheckoutRetornoRoute
   CheckoutIndexRoute: typeof CheckoutIndexRoute
@@ -220,6 +233,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUploadGuiaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/painel': {
+      id: '/admin/painel'
+      path: '/admin/painel'
+      fullPath: '/admin/painel'
+      preLoaderRoute: typeof AdminPainelRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/lovable/email/transactional/preview': {
       id: '/lovable/email/transactional/preview'
       path: '/lovable/email/transactional/preview'
@@ -243,6 +263,7 @@ const rootRouteChildren: RootRouteChildren = {
   PoliticaDePrivacidadeRoute: PoliticaDePrivacidadeRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermosDeUsoRoute: TermosDeUsoRoute,
+  AdminPainelRoute: AdminPainelRoute,
   AdminUploadGuiaRoute: AdminUploadGuiaRoute,
   CheckoutRetornoRoute: CheckoutRetornoRoute,
   CheckoutIndexRoute: CheckoutIndexRoute,

@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-const VALOR_GUIA = 239.9;
+import { VALOR_GUIA } from "@/lib/guia.constants";
 
 const dadosSchema = z.object({
   nome: z.string().trim().min(5).max(120),
