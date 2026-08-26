@@ -54,53 +54,39 @@ export const Route = createFileRoute("/api/public/pagamentos/sigilopay")({
                 ? "estornado"
                 : "pendente";
 
-        const firebaseUrl = process.env.FIREBASE_DATABASE_URL;
-        if (firebaseUrl) {
-          try {
-            await fetch(
-              `${firebaseUrl}/pedidos.json?orderBy="transactionId"&equalTo="${transactionId}"`,
-              {
-                method: "PATCH",
-                body: JSON.stringify({ status: novoStatus }),
-              }
-            );
-          } catch (err) {
-            console.error("Webhook: falha ao atualizar pedido no Firebase", err);
-          }
+        const { buscarPedidoPorTransacao, atualizarStatusPedido } = await import(
+          "@/lib/firebase.server"
+        );
+
+        let encontrado;
+        try {
+          encontrado = await buscarPedidoPorTransacao(transactionId);
+        } catch (err) {
+          console.error("Webhook: falha ao consultar pedido no Firebase", err);
+          return new Response("Erro ao consultar pedido", { status: 500 });
         }
 
-        if (novoStatus === "pago") {
-          console.log("Status atualizado para PAGO, disparando entrega de guia...");
-          const firebaseUrl = process.env.FIREBASE_DATABASE_URL;
-          if (firebaseUrl) {
-            try {
-              console.log("Buscando pedido no Firebase com transactionId:", transactionId);
-              const respPedidos = await fetch(`${firebaseUrl}/pedidos.json`);
-              const todosPedidos = await respPedidos.json();
+        if (!encontrado) {
+          console.error("Webhook: nenhum pedido para a transação", transactionId);
+          return new Response("ok");
+        }
 
-              let pedidoEncontrado = null;
-              for (const pedidoId in todosPedidos) {
-                if (todosPedidos[pedidoId].transactionId === transactionId) {
-                  pedidoEncontrado = todosPedidos[pedidoId];
-                  break;
-                }
-              }
+        try {
+          await atualizarStatusPedido(encontrado.id, novoStatus);
+        } catch (err) {
+          console.error("Webhook: falha ao atualizar pedido no Firebase", err);
+        }
 
-              if (pedidoEncontrado) {
-                console.log("Pedido encontrado para:", pedidoEncontrado.email);
-                const { entregarGuia } = await import("@/lib/entrega-guia.server");
-                await entregarGuia({
-                  transactionId,
-                  nome: pedidoEncontrado.nome,
-                  email: pedidoEncontrado.email,
-                });
-              } else {
-                console.error("Nenhum pedido encontrado para transactionId:", transactionId);
-              }
-            } catch (err) {
-              console.error("Erro ao recuperar dados do pedido:", err);
-            }
-          }
+        // Só entrega na transição para "pago", para não reenviar o guia caso o
+        // gateway repita o webhook da mesma transação.
+        if (novoStatus === "pago" && encontrado.pedido.status !== "pago") {
+          const { entregarGuia } = await import("@/lib/entrega-guia.server");
+          await entregarGuia({
+            transactionId,
+            nome: encontrado.pedido.nome,
+            email: encontrado.pedido.email,
+            origem: new URL(request.url).origin,
+          });
         }
 
         return new Response("ok");

@@ -1,15 +1,16 @@
-async function lerPdfComoBase64(): Promise<string> {
+/**
+ * O PDF mora em `public/`, servido como asset estático. Em produção usamos a
+ * URL do deploy (o Vercel injeta VERCEL_URL); em desenvolvimento, a origem da
+ * própria requisição, que já traz a porta correta. Não usamos a origem em
+ * produção para que um Host forjado não faça o servidor anexar outro arquivo.
+ */
+async function lerPdfComoBase64(origem?: string): Promise<string> {
   try {
-    let url: string;
-    if (process.env.VERCEL_URL) {
-      url = `https://${process.env.VERCEL_URL}/guia-primeiro-passaporte.pdf`;
-    } else {
-      // Desenvolvimento local - usar porta dinâmica
-      const host = process.env.HOST || '127.0.0.1';
-      const port = process.env.PORT || '3000';
-      url = `http://${host}:${port}/guia-primeiro-passaporte.pdf`;
-    }
-    const response = await fetch(url);
+    const base = process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : (origem ?? "http://127.0.0.1:3000");
+
+    const response = await fetch(`${base}/guia-primeiro-passaporte.pdf`);
 
     if (!response.ok) {
       throw new Error(`Falha ao buscar PDF: ${response.status}`);
@@ -28,11 +29,12 @@ export async function entregarGuia(input: {
   transactionId: string;
   nome: string;
   email: string;
+  origem?: string;
 }): Promise<void> {
   try {
     const { enviarGuiaPorEmail } = await import("./resend-email.server");
 
-    const pdfBase64 = await lerPdfComoBase64();
+    const pdfBase64 = await lerPdfComoBase64(input.origem);
 
     const resultado = await enviarGuiaPorEmail({
       email: input.email,

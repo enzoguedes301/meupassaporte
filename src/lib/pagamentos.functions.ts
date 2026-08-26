@@ -44,22 +44,17 @@ export const criarPagamentoPix = createServerFn({ method: "POST" })
       },
     });
 
-    const firebaseUrl = process.env.FIREBASE_DATABASE_URL;
-    if (firebaseUrl) {
-      try {
-        await fetch(`${firebaseUrl}/pedidos/${pedidoId}.json`, {
-          method: "PUT",
-          body: JSON.stringify({
-            transactionId: resultado.transactionId,
-            nome: data.nome,
-            email: data.email,
-            status: "pendente",
-            criadoEm: new Date().toISOString(),
-          }),
-        });
-      } catch (erro) {
-        console.error("Erro ao salvar pedido no Firebase:", erro);
-      }
+    const { salvarPedido } = await import("@/lib/firebase.server");
+    try {
+      await salvarPedido(pedidoId, {
+        transactionId: resultado.transactionId,
+        nome: data.nome,
+        email: data.email,
+        status: "pendente",
+        criadoEm: new Date().toISOString(),
+      });
+    } catch (erro) {
+      console.error("Erro ao salvar pedido no Firebase:", erro);
     }
 
     return {
