@@ -26,9 +26,12 @@ export const Route = createFileRoute("/api/public/pagamentos/sigilopay")({
         const transactionId = parsed.transaction?.id;
         if (!transactionId) return new Response("ok");
 
-        // Modo teste: transações que começam com "test-" simulam status COMPLETED
+        // Modo teste: só fora de produção, para não liberar entrega gratuita do guia.
         let status: string;
-        if (transactionId.startsWith("test-")) {
+        if (
+          process.env.NODE_ENV !== "production" &&
+          transactionId.startsWith("test-")
+        ) {
           status = "COMPLETED";
           console.log("Webhook (modo teste):", transactionId);
         } else {
