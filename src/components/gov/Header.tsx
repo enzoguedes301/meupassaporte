@@ -3,6 +3,11 @@ import { BookMarked, User } from "lucide-react";
 export function GovHeader() {
   return (
     <header className="sticky top-0 z-50">
+      {/* Aviso de não-vínculo (desktop only) */}
+      <div className="hidden bg-amber-50 text-amber-900 px-4 py-2.5 md:flex md:items-center md:justify-start md:gap-2 border-b border-amber-200">
+        <span className="text-base">⚠️</span>
+        <span className="text-sm font-semibold">Material particular • Sem vínculo com a Polícia Federal ou órgãos públicos</span>
+      </div>
       {/* Barra superior institucional */}
       <div className="bg-primary text-primary-foreground">
         <div className="mx-auto flex h-8 max-w-6xl items-center justify-between gap-4 px-4 text-[11px] font-medium tracking-wide">
