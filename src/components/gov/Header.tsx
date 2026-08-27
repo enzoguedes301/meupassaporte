@@ -1,27 +1,6 @@
-import { useNavigate } from "@tanstack/react-router";
 import { BookMarked } from "lucide-react";
 
-/**
- * Leva ao formulário já com o capítulo escolhido. Mesclamos com o que estiver
- * salvo para não apagar dados de quem voltou ao início no meio da compra.
- */
-function useIrParaCompra() {
-  const navigate = useNavigate();
-
-  return (tipo: string) => {
-    try {
-      const salvo = sessionStorage.getItem("formulario-checkout");
-      const dados = salvo ? (JSON.parse(salvo) as Record<string, unknown>) : {};
-      sessionStorage.setItem(
-        "formulario-checkout",
-        JSON.stringify({ ...dados, tipoSolicitacao: tipo }),
-      );
-    } catch {
-      //
-    }
-    void navigate({ to: "/checkout-form" });
-  };
-}
+import { useIrParaCompra } from "@/lib/compra";
 
 export function GovHeader() {
   const irParaCompra = useIrParaCompra();
