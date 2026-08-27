@@ -18,8 +18,8 @@ export const brl = (valor: number) =>
 
 /** Identificação legal do vendedor — exigida pelas políticas de anúncio. */
 export const EMPRESA = {
-  razaoSocial: "RAZÃO SOCIAL AQUI",
-  cnpj: "81.454.211/0001-04",
-  endereco: "ENDEREÇO COMPLETO AQUI",
-  email: "EMAIL DE CONTATO AQUI",
+  razaoSocial: "C6M Soluções",
+  cnpj: "01.086.251/0001-01",
+  endereco: "Rua Antônio Vicente de Paula, 736 — Jardim Samambaia, Campinas/SP",
+  email: "chasecador123@gmail.com",
 } as const;
