@@ -87,7 +87,7 @@ export function TipoSolicitacaoSelect({ value, onChange, invalido = false, class
       >
         <Stamp className="size-5 shrink-0 text-primary" aria-hidden />
         <span className="flex-1 truncate">
-          {selecionado?.label ?? "Selecione o tipo de solicitação"}
+          {selecionado?.label ?? "Selecione o tipo de solicitação de guia"}
         </span>
         <ChevronDown
           className={cn(
