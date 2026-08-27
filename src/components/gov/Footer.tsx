@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 
-import { EMPRESA, TAXA_GRU_COMUM, URL_GRU_OFICIAL, brl } from "@/lib/guia.constants";
+import { EMPRESA, URL_GRU_OFICIAL } from "@/lib/guia.constants";
 
 export function GovFooter() {
   return (
@@ -81,8 +81,8 @@ export function GovFooter() {
               Todo o processo pode ser feito por você, de graça, nos canais oficiais do governo
             </strong>
             , pagando apenas as taxas oficiais. O que você paga aqui é apenas pelo guia em PDF. A
-            taxa do passaporte (GRU, {brl(TAXA_GRU_COMUM)} na modalidade comum) é paga
-            separadamente e diretamente à Polícia Federal, pelo{" "}
+            taxa do passaporte (GRU) é paga separadamente e diretamente à Polícia Federal, em valor
+            definido pelo órgão, pelo{" "}
             <a
               className="underline"
               href={URL_GRU_OFICIAL}

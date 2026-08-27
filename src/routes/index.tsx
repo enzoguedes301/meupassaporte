@@ -18,7 +18,7 @@ import {
 import { GovHeader } from "@/components/gov/Header";
 import { GovFooter } from "@/components/gov/Footer";
 import { marcarEtapa } from "@/lib/funil.rastreio";
-import { VALOR_GUIA, TAXA_GRU_COMUM, URL_GRU_OFICIAL, brl } from "@/lib/guia.constants";
+import { URL_GRU_OFICIAL } from "@/lib/guia.constants";
 import { HeroSolicitacao } from "@/components/gov/HeroSolicitacao";
 import { SolicitacaoDialog } from "@/components/gov/SolicitacaoDialog";
 import heroImage from "@/assets/hero-passaporte.png";
@@ -65,10 +65,12 @@ export const Route = createFileRoute("/")({
           image: "https://meupassaporte.digital/produto-guia-passaporte.jpg",
           url: "https://meupassaporte.digital/",
           brand: { "@type": "Brand", name: "Guia do Passaporte" },
+          // Sem `price`: o preço não é exibido na página, e declarar no dado
+          // estruturado um valor que o visitante não vê é divergência passível
+          // de ação manual. Reponha junto com o preço visível.
           offers: {
             "@type": "Offer",
             url: "https://meupassaporte.digital/",
-            price: "239.90",
             priceCurrency: "BRL",
             availability: "https://schema.org/InStock",
             itemCondition: "https://schema.org/NewCondition",
@@ -166,8 +168,8 @@ const conteudos = [
 
 const faq = [
   {
-    q: "Eu consigo fazer isso sozinho, de graça?",
-    a: "Sim. Todo o processo do passaporte pode ser feito por você mesmo, gratuitamente, nos canais oficiais do Governo Federal — você paga apenas a taxa oficial (GRU) diretamente à Polícia Federal. Este guia é totalmente opcional: ele existe para poupar seu tempo e evitar os erros que fazem gente perder o atendimento e ter que remarcar, mas nada aqui é obrigatório e nada aqui substitui os canais oficiais.",
+    q: "É possível realizar o processo por conta própria, sem custo?",
+    a: "Sim. Todo o processo de emissão do passaporte pode ser realizado gratuitamente pelo próprio interessado, nos canais oficiais do Governo Federal, mediante o recolhimento apenas da taxa oficial (GRU), paga diretamente à Polícia Federal. A aquisição deste guia é inteiramente opcional: seu propósito é reduzir o tempo dedicado ao procedimento e evitar os erros que mais levam solicitantes a perder o atendimento. O material não é obrigatório e não substitui, em nenhuma hipótese, os canais oficiais.",
   },
   {
     q: "Em quanto tempo recebo o material?",
@@ -183,7 +185,7 @@ const faq = [
   },
   {
     q: "O valor pago aqui é a taxa do passaporte?",
-    a: "Não. O valor cobrado (R$ 239,90) é apenas pelo acesso ao guia educacional. A taxa oficial do passaporte é paga separadamente, por meio de guia emitida no sistema do órgão responsável (Polícia Federal).",
+    a: "Não. O valor cobrado neste site refere-se exclusivamente ao acesso ao guia informativo, e é exibido integralmente antes da confirmação da compra. A taxa oficial do passaporte (GRU) é paga separadamente, em valor definido pela Polícia Federal, por meio de guia emitida no sistema do órgão responsável.",
   },
   {
     q: "Serve para quem nunca tirou passaporte?",
@@ -222,13 +224,14 @@ function Index() {
               </p>
 
               <h1 className="mt-2 font-display text-3xl font-extrabold leading-[1.15] text-primary-darker sm:text-4xl lg:text-5xl">
-                O passo a passo do primeiro passaporte, explicado sem juridiquês
+                O passo a passo do primeiro passaporte, explicado com clareza
               </h1>
 
               <p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-                Um guia em PDF que acompanha você desde a separação dos documentos até o documento
-                na mão — com os detalhes que mais fazem gente perder o atendimento e ter que
-                remarcar. Não emitimos passaporte nem agendamos: quem faz isso é a Polícia Federal.
+                Um guia em PDF que acompanha todas as fases do procedimento, da separação dos
+                documentos até a retirada do passaporte, com atenção aos detalhes que mais levam
+                solicitantes a perder o atendimento e a remarcá-lo. Não emitimos passaporte nem
+                realizamos agendamento: essas atribuições são exclusivas da Polícia Federal.
               </p>
 
               <HeroSolicitacao />
@@ -344,7 +347,7 @@ function Index() {
                 {
                   icon: Info,
                   t: "Linguagem simples",
-                  d: "Sem juridiquês: cada termo técnico é explicado na hora em que aparece.",
+                  d: "Cada termo técnico é explicado no momento em que aparece, sem exigir conhecimento prévio.",
                 },
                 {
                   icon: Lock,
@@ -399,38 +402,35 @@ function Index() {
 
               <div className="flex flex-col justify-center rounded-md border-2 border-primary bg-primary-soft/40 p-6 sm:p-8">
                 {/*
-                  Os dois valores lado a lado: o que vai para nós e o que vai
-                  para o governo. Separar isso é o que impede alguém de achar
-                  que está pagando a taxa do passaporte aqui.
+                  Os valores ficam no checkout, por decisão comercial. O que
+                  precisa continuar explícito aqui é que são dois pagamentos
+                  distintos — sem isso alguém pode achar que paga a taxa do
+                  passaporte neste site.
                 */}
                 <dl className="space-y-3 text-left">
-                  <div className="flex items-baseline justify-between gap-3">
-                    <dt className="text-sm font-medium text-primary-dark">
+                  <div className="border-b border-primary/25 pb-3">
+                    <dt className="text-sm font-semibold text-primary-dark">
                       Guia em PDF
-                      <span className="block text-xs font-normal text-muted-foreground">
-                        pago a nós, uma vez
-                      </span>
                     </dt>
-                    <dd className="font-display text-2xl font-extrabold text-primary-darker">
-                      {brl(VALOR_GUIA)}
+                    <dd className="mt-0.5 text-xs text-muted-foreground">
+                      Pagamento único, efetuado a nós. Valor exibido antes da confirmação da
+                      compra.
                     </dd>
                   </div>
 
-                  <div className="flex items-baseline justify-between gap-3 border-t border-primary/25 pt-3">
-                    <dt className="text-sm font-medium text-muted-foreground">
-                      Taxa oficial (GRU)
-                      <span className="block text-xs font-normal text-muted-foreground">
-                        paga por você à Polícia Federal
-                      </span>
+                  <div>
+                    <dt className="text-sm font-semibold text-muted-foreground">
+                      Taxa oficial do passaporte (GRU)
                     </dt>
-                    <dd className="font-display text-lg font-bold text-muted-foreground">
-                      {brl(TAXA_GRU_COMUM)}
+                    <dd className="mt-0.5 text-xs text-muted-foreground">
+                      Recolhida por você diretamente à Polícia Federal, em valor definido pelo
+                      órgão. Não é cobrada neste site.
                     </dd>
                   </div>
                 </dl>
 
                 <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
-                  São dois pagamentos separados. Aqui você paga apenas o guia — a taxa do
+                  São dois pagamentos distintos. Aqui você paga apenas o guia — a taxa do
                   passaporte nunca passa por nós.
                 </p>
 
