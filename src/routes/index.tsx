@@ -18,6 +18,7 @@ import {
 import { GovHeader } from "@/components/gov/Header";
 import { GovFooter } from "@/components/gov/Footer";
 import { marcarEtapa } from "@/lib/funil.rastreio";
+import { VALOR_GUIA, TAXA_GRU_COMUM, URL_GRU_OFICIAL, brl } from "@/lib/guia.constants";
 import { HeroSolicitacao } from "@/components/gov/HeroSolicitacao";
 import { SolicitacaoDialog } from "@/components/gov/SolicitacaoDialog";
 import heroImage from "@/assets/hero-passaporte.png";
@@ -165,6 +166,10 @@ const conteudos = [
 
 const faq = [
   {
+    q: "Eu consigo fazer isso sozinho, de graça?",
+    a: "Sim. Todo o processo do passaporte pode ser feito por você mesmo, gratuitamente, nos canais oficiais do Governo Federal — você paga apenas a taxa oficial (GRU) diretamente à Polícia Federal. Este guia é totalmente opcional: ele existe para poupar seu tempo e evitar os erros que fazem gente perder o atendimento e ter que remarcar, mas nada aqui é obrigatório e nada aqui substitui os canais oficiais.",
+  },
+  {
     q: "Em quanto tempo recebo o material?",
     a: "Assim que o pagamento é confirmado (normalmente em poucos minutos), o Guia do Passaporte em PDF é enviado para o e-mail que você informou na compra. O arquivo é seu para sempre, e você pode acessá-lo de qualquer dispositivo.",
   },
@@ -212,14 +217,18 @@ function Index() {
         <section className="border-b border-border bg-surface">
           <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 lg:grid-cols-[1.1fr_0.9fr] lg:py-20">
             <div>
-              <h1 className="font-display text-3xl font-extrabold leading-[1.15] text-primary-darker sm:text-4xl lg:text-5xl">
-                Tire seu primeiro passaporte sem erro, sem fila extra e sem retrabalho
+              <p className="text-sm font-bold uppercase tracking-wide text-primary">
+                Guia informativo em PDF · material particular
+              </p>
+
+              <h1 className="mt-2 font-display text-3xl font-extrabold leading-[1.15] text-primary-darker sm:text-4xl lg:text-5xl">
+                O passo a passo do primeiro passaporte, explicado sem juridiquês
               </h1>
 
               <p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-                Um passo a passo direto, em linguagem simples, que acompanha você desde a separação
-                dos documentos até o documento na mão — com os detalhes que mais fazem gente perder
-                o atendimento.
+                Um guia em PDF que acompanha você desde a separação dos documentos até o documento
+                na mão — com os detalhes que mais fazem gente perder o atendimento e ter que
+                remarcar. Não emitimos passaporte nem agendamos: quem faz isso é a Polícia Federal.
               </p>
 
               <HeroSolicitacao />
@@ -388,9 +397,41 @@ function Index() {
                 </ul>
               </div>
 
-              <div className="flex flex-col items-center justify-center rounded-md border-2 border-primary bg-primary-soft/40 p-6 text-center sm:p-8">
-                <p className="text-sm font-medium text-primary-dark">
-                  Clique abaixo para garantir o seu acesso
+              <div className="flex flex-col justify-center rounded-md border-2 border-primary bg-primary-soft/40 p-6 sm:p-8">
+                {/*
+                  Os dois valores lado a lado: o que vai para nós e o que vai
+                  para o governo. Separar isso é o que impede alguém de achar
+                  que está pagando a taxa do passaporte aqui.
+                */}
+                <dl className="space-y-3 text-left">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <dt className="text-sm font-medium text-primary-dark">
+                      Guia em PDF
+                      <span className="block text-xs font-normal text-muted-foreground">
+                        pago a nós, uma vez
+                      </span>
+                    </dt>
+                    <dd className="font-display text-2xl font-extrabold text-primary-darker">
+                      {brl(VALOR_GUIA)}
+                    </dd>
+                  </div>
+
+                  <div className="flex items-baseline justify-between gap-3 border-t border-primary/25 pt-3">
+                    <dt className="text-sm font-medium text-muted-foreground">
+                      Taxa oficial (GRU)
+                      <span className="block text-xs font-normal text-muted-foreground">
+                        paga por você à Polícia Federal
+                      </span>
+                    </dt>
+                    <dd className="font-display text-lg font-bold text-muted-foreground">
+                      {brl(TAXA_GRU_COMUM)}
+                    </dd>
+                  </div>
+                </dl>
+
+                <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
+                  São dois pagamentos separados. Aqui você paga apenas o guia — a taxa do
+                  passaporte nunca passa por nós.
                 </p>
 
                 <SolicitacaoDialog>
@@ -406,6 +447,19 @@ function Index() {
                 <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
                   <Lock className="size-3.5" aria-hidden />
                   Ambiente de pagamento seguro
+                </p>
+
+                <p className="mt-3 text-center text-xs leading-relaxed text-muted-foreground">
+                  Compra opcional. Você pode fazer todo o processo sozinho, de graça, nos{" "}
+                  <a
+                    className="gov-link"
+                    href={URL_GRU_OFICIAL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    canais oficiais do governo
+                  </a>
+                  .
                 </p>
               </div>
             </div>

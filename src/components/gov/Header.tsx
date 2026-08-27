@@ -3,10 +3,24 @@ import { BookMarked, User } from "lucide-react";
 export function GovHeader() {
   return (
     <header className="sticky top-0 z-50">
-      {/* Aviso de não-vínculo (desktop only) */}
-      <div className="hidden bg-amber-50 text-amber-900 px-4 py-2.5 md:flex md:items-center md:justify-start md:gap-2 border-b border-amber-200">
-        <span className="text-base">⚠️</span>
-        <span className="text-sm font-semibold">Material particular • Sem vínculo com a Polícia Federal ou órgãos públicos</span>
+      {/*
+        Aviso de não-vínculo. Precisa aparecer em TODA largura de tela: é o
+        primeiro elemento que um revisor de anúncios vê, e ele revisa no mobile.
+      */}
+      <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-amber-900">
+        <div className="mx-auto flex max-w-6xl items-start gap-2">
+          <span className="mt-0.5 shrink-0 text-sm leading-none" aria-hidden>
+            ⚠️
+          </span>
+          <p className="text-[11px] leading-snug sm:text-xs">
+            <strong className="font-bold">
+              Site particular. Não somos a Polícia Federal nem o gov.br.
+            </strong>{" "}
+            Vendemos um guia informativo em PDF — você mesmo pode fazer todo o
+            processo de graça nos canais oficiais do governo, pagando apenas as
+            taxas oficiais.
+          </p>
+        </div>
       </div>
 
       <div className="border-b border-border bg-surface">

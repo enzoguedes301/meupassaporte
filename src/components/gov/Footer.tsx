@@ -1,5 +1,7 @@
 import { Link } from "@tanstack/react-router";
 
+import { EMPRESA, TAXA_GRU_COMUM, URL_GRU_OFICIAL, brl } from "@/lib/guia.constants";
+
 export function GovFooter() {
   return (
     <footer className="mt-20 bg-primary text-primary-foreground">
@@ -57,18 +59,60 @@ export function GovFooter() {
                 Política de reembolso
               </Link>
             </li>
-            <li>Suporte ao comprador</li>
+            <li>
+              <a className="hover:underline" href={`mailto:${EMPRESA.email}`}>
+                Falar com o suporte
+              </a>
+            </li>
           </ul>
+        </div>
+      </div>
+
+      {/*
+        Identificação do vendedor. As políticas de anúncio exigem saber quem
+        está por trás do site — sem isso a campanha cai por "identidade
+        empresarial indisponível".
+      */}
+      <div className="border-t border-primary-foreground/15">
+        <div className="mx-auto max-w-6xl px-4 py-6 text-xs leading-relaxed opacity-80">
+          <p className="font-semibold uppercase tracking-wide">Quem vende este guia</p>
+          <address className="mt-2 not-italic">
+            {EMPRESA.razaoSocial} · CNPJ {EMPRESA.cnpj}
+            <br />
+            {EMPRESA.endereco}
+            <br />
+            <a className="underline" href={`mailto:${EMPRESA.email}`}>
+              {EMPRESA.email}
+            </a>
+          </address>
         </div>
       </div>
 
       <div className="border-t border-primary-foreground/15">
         <div className="mx-auto max-w-6xl px-4 py-6 text-xs leading-relaxed opacity-70">
-          <strong className="font-semibold">Aviso importante:</strong> este site é um produto
-          educacional privado e não possui vínculo, patrocínio ou representação de qualquer órgão
-          público, da Polícia Federal ou do portal gov.br. A emissão do passaporte é feita
-          exclusivamente pelos canais oficiais do Governo Federal, e as taxas oficiais são pagas
-          diretamente ao órgão competente.
+          <p>
+            <strong className="font-semibold">Aviso importante:</strong> este site é um produto
+            informativo privado e opcional. Não somos a Polícia Federal, não somos o gov.br e não
+            temos vínculo, patrocínio ou representação de qualquer órgão público. Não emitimos
+            passaporte nem agendamos atendimento.
+          </p>
+          <p className="mt-3">
+            <strong className="font-semibold">
+              Todo o processo pode ser feito por você, de graça, nos canais oficiais do governo
+            </strong>
+            , pagando apenas as taxas oficiais. O que você paga aqui é apenas pelo guia em PDF. A
+            taxa do passaporte (GRU, {brl(TAXA_GRU_COMUM)} na modalidade comum) é paga
+            separadamente e diretamente à Polícia Federal, pelo{" "}
+            <a
+              className="underline"
+              href={URL_GRU_OFICIAL}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              site oficial
+            </a>
+            .
+          </p>
         </div>
       </div>
     </footer>
