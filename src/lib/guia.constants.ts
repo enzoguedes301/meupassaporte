@@ -16,10 +16,13 @@ export const URL_GRU_OFICIAL =
 export const brl = (valor: number) =>
   valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-/** Identificação legal do vendedor — exigida pelas políticas de anúncio. */
+/**
+ * Contato do vendedor.
+ *
+ * Razão social, CNPJ e endereço ficaram de fora por ora: eles precisam bater
+ * com o cadastro do anunciante no Google Ads, e publicar dados divergentes é
+ * pior do que não publicar nenhum.
+ */
 export const EMPRESA = {
-  razaoSocial: "C6M Soluções",
-  cnpj: "01.086.251/0001-01",
-  endereco: "Rua Antônio Vicente de Paula, 736 — Jardim Samambaia, Campinas/SP",
   email: "chasecador123@gmail.com",
 } as const;

@@ -68,26 +68,6 @@ export function GovFooter() {
         </div>
       </div>
 
-      {/*
-        Identificação do vendedor. As políticas de anúncio exigem saber quem
-        está por trás do site — sem isso a campanha cai por "identidade
-        empresarial indisponível".
-      */}
-      <div className="border-t border-primary-foreground/15">
-        <div className="mx-auto max-w-6xl px-4 py-6 text-xs leading-relaxed opacity-80">
-          <p className="font-semibold uppercase tracking-wide">Quem vende este guia</p>
-          <address className="mt-2 not-italic">
-            {EMPRESA.razaoSocial} · CNPJ {EMPRESA.cnpj}
-            <br />
-            {EMPRESA.endereco}
-            <br />
-            <a className="underline" href={`mailto:${EMPRESA.email}`}>
-              {EMPRESA.email}
-            </a>
-          </address>
-        </div>
-      </div>
-
       <div className="border-t border-primary-foreground/15">
         <div className="mx-auto max-w-6xl px-4 py-6 text-xs leading-relaxed opacity-70">
           <p>
